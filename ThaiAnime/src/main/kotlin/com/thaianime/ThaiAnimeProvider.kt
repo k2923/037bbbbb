@@ -4,6 +4,7 @@ import android.content.Context
 import com.providers.network.SampleArchive
 import com.providers.samples.bundledSamples
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -72,12 +73,16 @@ internal class ThaiAnimeProvider(private val site: Site, private val sampleMode:
     }
     override suspend fun search(query: String): List<SearchResponse> = if (sampleMode) sampleCards.filter { it.title.contains(query.trim(), ignoreCase = true) }.map { it.response() } else AnimeParser.cards(site, document(AnimeParser.searchUrl(site, query))).map { it.response() }
     override suspend fun load(url: String): LoadResponse {
-        val detail = AnimeParser.detail(site, document(url))
+        val doc = document(url)
+        val detail = AnimeParser.detail(site, doc)
+        val related = relatedTitles(doc, url, detail.title, anime = true, category = { categoryUrl ->
+            (if (sampleMode) bundledSamples.document(categoryUrl) else document(categoryUrl))?.let { AnimeParser.cards(site, it).map { card -> card.response() } }.orEmpty()
+        })
         if (detail.movie) return newMovieLoadResponse(detail.title, url, TvType.AnimeMovie, url) {
-            posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            recommendations = related; posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
         }
         return newAnimeLoadResponse(detail.title, url, TvType.Anime) {
-            posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            recommendations = related; posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
             detail.episodes.groupBy { if (it.dubbed) DubStatus.Dubbed else DubStatus.Subbed }.forEach { (dub, episodes) ->
                 addEpisodes(dub, episodes.map { ep -> newEpisode(ep.url) { name = ep.title; episode = ep.number; season = ep.season } })
             }

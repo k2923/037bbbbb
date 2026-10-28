@@ -4,6 +4,7 @@ import android.content.Context
 import com.providers.network.SampleArchive
 import com.providers.samples.bundledSamples
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -91,13 +92,19 @@ class TwentyFourHDProvider(private val sampleMode: Boolean = false) : MainAPI() 
 
     override suspend fun load(url: String): LoadResponse {
         val detail = detail(url)
+        // The API detail needs no second HTML request; title lookup uses the same live API.
+        val related = relatedTitles(if (sampleMode) bundledSamples.document(url) else null, url, detail.title,
+            category = { categoryUrl ->
+                if (sampleMode) bundledSamples.document(categoryUrl)?.let { TwentyFourHDParser.cards(it).map { card -> card.response() } }.orEmpty()
+                else catalog.listing(categoryUrl, 1).cards.map { it.response() }
+            })
         if (detail.episodes.isNotEmpty()) {
             return newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, detail.episodes.map { ep ->
                 // Store the page and episode number, then refresh its players when playback starts.
                 newEpisode("$url#episode=${ep.number}") { name = ep.title; episode = ep.number; season = 1 }
-            }) { posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot }
+            }) { recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot }
         }
-        return newMovieLoadResponse(detail.title, url, TvType.Movie, url) { posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot }
+        return newMovieLoadResponse(detail.title, url, TvType.Movie, url) { recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean =

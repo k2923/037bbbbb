@@ -4,6 +4,7 @@ import android.content.Context
 import com.providers.network.SampleArchive
 import com.providers.samples.bundledSamples
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -63,15 +64,19 @@ class AHDZeroProvider(private val sampleMode: Boolean = false) : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> = if (sampleMode) sampleCards.filter { it.title.contains(query.trim(), ignoreCase = true) }.map { it.response() } else AHDZeroParser.cards(document("$mainUrl/search/results?q=${URLEncoder.encode(query, "UTF-8")}")).map { it.response() }
 
     override suspend fun load(url: String): LoadResponse {
-        val detail = AHDZeroParser.detail(document(url))
+        val doc = document(url)
+        val detail = AHDZeroParser.detail(doc)
+        val related = relatedTitles(doc, url, detail.title, anime = true, category = { categoryUrl ->
+            (if (sampleMode) bundledSamples.document(categoryUrl) else document(categoryUrl))?.let { AHDZeroParser.cards(it).map { card -> card.response() } }.orEmpty()
+        })
         if (detail.movie) {
             val episode = detail.episodes.firstOrNull() ?: throw ErrorLoadingException("ยังไม่มีตอนให้รับชม")
             return newMovieLoadResponse(detail.title, url, TvType.AnimeMovie, episode.url) {
-                posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
+                recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
             }
         }
         return newAnimeLoadResponse(detail.title, url, TvType.Anime) {
-            posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
+            recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
             addEpisodes(if (detail.title.contains("พากย์ไทย")) DubStatus.Dubbed else DubStatus.Subbed,
                 detail.episodes.map { ep -> newEpisode(ep.url) { name = ep.title; episode = ep.number } })
         }

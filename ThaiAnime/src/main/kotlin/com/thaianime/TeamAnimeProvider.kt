@@ -3,6 +3,7 @@ package com.thaianime
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.jsoup.nodes.Document
@@ -37,12 +38,16 @@ internal class TeamAnimeProvider(private val site: TeamAnimeSite) : MainAPI() {
     }
     override suspend fun search(query: String): List<SearchResponse> = parser.cards(document(parser.searchUrl(query))).map { it.response() }
     override suspend fun load(url: String): LoadResponse {
-        val detail = parser.detail(document(url))
+        val doc = document(url)
+        val detail = parser.detail(doc)
+        val related = relatedTitles(doc, url, detail.title, anime = true, category = { categoryUrl ->
+            parser.cards(document(categoryUrl)).map { it.response() }
+        })
         if (detail.movie) return newMovieLoadResponse(detail.title, url, TvType.AnimeMovie, url) {
-            posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            recommendations = related; posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
         }
         return newAnimeLoadResponse(detail.title, url, TvType.Anime) {
-            posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            recommendations = related; posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
             detail.episodes.groupBy { if (it.dubbed) DubStatus.Dubbed else DubStatus.Subbed }.forEach { (dub, episodes) ->
                 addEpisodes(dub, episodes.map { ep -> newEpisode(ep.url) { name = ep.title; episode = ep.number; season = ep.season } })
             }
