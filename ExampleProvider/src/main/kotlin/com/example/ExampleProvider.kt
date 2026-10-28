@@ -3,6 +3,7 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.utils.*
 import java.net.URLEncoder
 import kotlinx.coroutines.sync.Semaphore
@@ -73,6 +74,9 @@ class ExampleProvider : MainAPI() {
         val document = document(url)
 
         val details = MovieDetailsParser.parse(document)
+        val related = relatedTitles(document, url, details.title, category = { categoryUrl ->
+            MovieListingParser.parse(document(categoryUrl)).map { it.toSearchResult() }
+        })
         val title = details.title
         val poster = details.posterUrl
         val plot = details.plot
@@ -87,6 +91,7 @@ class ExampleProvider : MainAPI() {
         }
         if (episodes.isNotEmpty()) {
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                recommendations = related
                 this.posterUrl = fixUrlNull(poster)
                 this.plot = plot
                 this.tags = tags
@@ -94,7 +99,8 @@ class ExampleProvider : MainAPI() {
         }
 
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
-            this.posterUrl = fixUrlNull(poster)
+            recommendations = related
+                this.posterUrl = fixUrlNull(poster)
             this.plot = plot
             this.tags = tags
         }

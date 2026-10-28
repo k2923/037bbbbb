@@ -2,6 +2,7 @@ package com.movie2freehd
 
 import android.content.Context
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -50,13 +51,17 @@ class Movie2FreeHDProvider : MainAPI() {
         Movie2FreeHDParser.cards(document("$mainUrl/?s=${URLEncoder.encode(query, "UTF-8")}")).map { it.response() }
 
     override suspend fun load(url: String): LoadResponse {
-        val detail = Movie2FreeHDParser.detail(document(url))
+        val doc = document(url)
+        val detail = Movie2FreeHDParser.detail(doc)
+        val related = relatedTitles(doc, url, detail.title, category = { categoryUrl ->
+            Movie2FreeHDParser.cards(document(categoryUrl)).map { it.response() }
+        })
         return if (detail.series) {
             newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, detail.episodes.map { ep ->
                 newEpisode("$url#season=${ep.season}&episode=${ep.number}") { name = ep.title; season = ep.season; episode = ep.number }
-            }) { posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot; tags = detail.tags }
+            }) { recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot; tags = detail.tags }
         } else newMovieLoadResponse(detail.title, url, TvType.Movie, url) {
-            posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot; tags = detail.tags
+            recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot; tags = detail.tags
         }
     }
     override fun getVideoInterceptor(extractorLink: ExtractorLink): okhttp3.Interceptor? =

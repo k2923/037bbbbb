@@ -2,6 +2,7 @@ package com.moviedofree
 
 import android.content.Context
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -52,9 +53,13 @@ class MovieDoFreeProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val detail = MovieDoFreeParser.detail(document(url))
+        val doc = document(url)
+        val detail = MovieDoFreeParser.detail(doc)
+        val related = relatedTitles(doc, url, detail.title, category = { categoryUrl ->
+            MovieDoFreeParser.cards(document(categoryUrl)).map { it.response() }
+        })
         return newMovieLoadResponse(detail.title, url, TvType.Movie, url) {
-            posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot
+            recommendations = related; posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot
         }
     }
 

@@ -2,6 +2,7 @@ package com.twentyfivehd
 
 import android.content.Context
 import com.providers.network.withNativePlayback
+import com.providers.network.relatedTitles
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -56,18 +57,22 @@ class TwentyFiveHDProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val detail = TwentyFiveParser.detail(document(url))
+        val doc = document(url)
+        val detail = TwentyFiveParser.detail(doc)
+        val related = relatedTitles(doc, url, detail.title, category = { categoryUrl ->
+            TwentyFiveParser.cards(document(categoryUrl)).map { it.response() }
+        })
         val catalog = resolver().catalog(detail.embed, url)
         if (catalog.series) {
             val episodes = catalog.episodes.map {
                 newEpisode(PlaybackContext(it.url, url).encode()) { name = it.name; season = it.season; episode = it.number }
             }
             return newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, episodes) {
-                posterUrl = detail.poster; plot = detail.plot; tags = detail.tags
+                recommendations = related; posterUrl = detail.poster; plot = detail.plot; tags = detail.tags
             }
         }
         return newMovieLoadResponse(detail.title, url, TvType.Movie, PlaybackContext(detail.embed, url).encode()) {
-            posterUrl = detail.poster; plot = detail.plot; tags = detail.tags
+            recommendations = related; posterUrl = detail.poster; plot = detail.plot; tags = detail.tags
         }
     }
 
