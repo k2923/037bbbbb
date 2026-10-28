@@ -1,7 +1,7 @@
 package com.twentyfivehd
 
 import android.content.Context
-import com.providers.network.withBrowserFallback
+import com.providers.network.withNativePlayback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -80,7 +80,7 @@ class TwentyFiveHDProvider : MainAPI() {
         HlsRouting.decode(extractorLink.extractorData)?.let { HlsRoutingInterceptor(it) }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean =
-        withBrowserFallback(PlaybackContext.decode(data).page, callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
+        withNativePlayback(callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
 
     private suspend fun loadVideoLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val resolver = resolver()

@@ -45,6 +45,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
+      - name: Setup ICU regex verification
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libicu-dev
+
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

@@ -15,7 +15,7 @@ internal object TwentyFourHDParser {
     private val number = Regex("(?:EP\\.?|ตอนที่)\\s*(\\d+)", RegexOption.IGNORE_CASE)
     private val cssUrl = Regex("""background-image\s*:\s*url\(["']?([^"')]+)["']?\)""", RegexOption.IGNORE_CASE)
 
-    private val cssRule = Regex("([^{}]+)\\{([^{}]*)}")
+    private val cssRule = Regex("([^{}]+)\\{([^{}]*)\\}")
     private val cardClass = Regex("\\.(e-loop-item-\\d+)(?![\\w-])")
     private val cardId = Regex("e-loop-item-\\d+")
 

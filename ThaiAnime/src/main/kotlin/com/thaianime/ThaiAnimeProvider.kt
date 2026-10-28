@@ -3,7 +3,7 @@ package com.thaianime
 import android.content.Context
 import com.providers.network.SampleArchive
 import com.providers.samples.bundledSamples
-import com.providers.network.withBrowserFallback
+import com.providers.network.withNativePlayback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -90,7 +90,7 @@ internal class ThaiAnimeProvider(private val site: Site, private val sampleMode:
         return AnimeMamiInterceptor(host, browserSession)
     }
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean =
-        withBrowserFallback(data, callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
+        withNativePlayback(callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
 
     private suspend fun loadVideoLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val visited = mutableSetOf<String>()

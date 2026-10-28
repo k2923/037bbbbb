@@ -11,11 +11,11 @@
 | `shared/.../CatalogPagination.kt` | สร้าง URL แบบ path/query โดยคง raw query และตรวจลิงก์ถัดไปที่ไปหน้าอื่นจริง |
 | `shared/.../CdnFailoverInterceptor.kt` | ลอง CDN ที่ตัวเล่นประกาศ แล้วเก็บ URL เดิมไว้สำรอง; จำ origin ที่ตอบสำเร็จภายใน instance เดียว |
 | `shared/.../BrowserSession.kt` | ใช้คุกกี้ที่มีอยู่แบบ passive และคง User-Agent เฉพาะตัวเล่น ไม่มีระบบแก้ challenge หรือ retry |
-| `shared/.../PlaybackFallback.kt` | นับเฉพาะ callback วิดีโอจริง รักษา primary เมื่อ backup เสีย และส่งต่อ cancellation |
-| `shared/.../ProviderBrowser.kt`, `ProviderWebView.kt` | เว็บสำรองจากหน้าตอน พร้อมควบคุมด้วยรีโมตและ cleanup ตาม lifecycle |
+| `shared/.../NativePlayback.kt` | นับเฉพาะ callback วิดีโอจริง รักษา primary เมื่อ backup เสีย และส่งต่อ cancellation |
 
 ## ข้อกำหนดที่ต้องรักษา
 
+- เมื่อดึงลิงก์เล่นไม่ได้ให้แจ้งสาเหตุในแอป ไม่เปิดหน้าต่างเว็บหรือ ACTION_VIEW ไปเบราว์เซอร์ ตามคำขอล่าสุดที่ยกเลิกพฤติกรรมเว็บสำรองเดิม
 - URL ในผลค้นหา/ตอนเป็น URL หน้าเว็บ; callback วิดีโอต้องเป็น media จริง ห้ามส่ง HTML/iframe เป็นไฟล์วิดีโอ
 - ข้อมูลรายการใช้ cache ของแอป; URL ตัวเล่น/session/token โหลดใหม่เมื่อกดเล่น
 - แต่ละ provider ที่เปิดใช้งานจำกัดคำขอหมวดพร้อมกันสามคำขอ คงหมวดหลักขนาดเล็ก
@@ -38,10 +38,10 @@ TeamAnimePlayer อ่านเฉพาะปุ่มจริง/dropdown/ifr
 MP4/HLS ต้องตรง host/path/ID ของ embed และถูกใช้เป็น source ของ Clappr; callback ระบุ VIDEO หรือ M3U8 ตามรูปแบบจริง
 HLS เก็บ URL master พร้อม port/query/Referer ไม่ดึง session/key มา cache ใน plugin; การอ่าน playlist และ AES-128 เป็นหน้าที่ native player
 ใช้ extractor ต่อเมื่อรูปแบบเฉพาะไม่รองรับ และรักษาการยกเลิก/ผลจากตัวเล่นที่ทำงานได้
-Hit อาจ redirect หน้าตอนใน browser แม้ HTTP HTML มีตัวเล่น จึงเปิด player URL ที่ประกาศไว้เป็น web fallback เมื่ออ่านพบแล้ว
+Hit อ่านตัวเล่นที่เว็บประกาศผ่าน native resolver; เมื่อไม่มีลิงก์วิดีโอไม่เปิด player URL เป็นหน้าต่างเว็บ
 โค้ด shared ถูกคอมไพล์เข้าแต่ละแพ็กเกจโดย root build script; หากเปลี่ยน shared ต้องเพิ่ม version ของทุก consumer ที่สร้างใหม่
 
-`ExampleProvider/src/test/.../com/providers/network/` ตรวจ helper ร่วม รวม response ownership, cancellation และ Android UI
+`ExampleProvider/src/test/.../com/providers/network/` ตรวจ helper ร่วม รวม response ownership, cancellation และผล native playback ที่ไม่เปิดเว็บ
 แต่ละ module ตรวจ parser/resolver ของตัวเองจาก fixture ใน `samples/`; ข้อมูล fixture ต้องคง URL ต้นฉบับ ไม่สร้างเส้นทางจากชื่อไฟล์
 คำสั่งสร้างและทดสอบแพ็กเกจที่เปิดใช้งานอยู่ใน README ส่วนแพ็กเกจที่ปิดทดสอบได้ผ่าน Gradle init script ที่ include สอง module ชั่วคราว
 ผล unit test/HTML parser ไม่ยืนยันการเล่นจริงบน Mi Box หรือการเข้าถึงจากเครือข่ายผู้ใช้
@@ -72,3 +72,9 @@ API ต้องตอบสำเร็จพร้อม content; กรณี
 เมื่อ API ผิดพลาดลอง parser HTML เดิมเพื่อให้เครือข่าย/เครื่องที่เข้า HTML ได้ยังใช้ได้ และรักษา cancellation
 ตอนกดเล่นขอรายละเอียด/ACF ใหม่ด้วย cacheTime=0 ก่อนโหลดตัวเล่นสด ไม่มีการใช้ media/session จาก fixture
 ผล403จาก sandbox ไม่ใช้เป็นเหตุปิดแหล่งหลักหรือเปลี่ยนตัวอ่านที่ทำงานบนเครื่องผู้ใช้
+
+## Regex บน Android
+
+Android ใช้ ICU4C; การ compile regex ผ่าน JDK ไม่ยืนยันว่าใช้ได้บนเครื่องจริง
+24HD ต้อง escape ทั้งเครื่องหมายเปิด/ปิดปีกกาในตัวอ่านกฎ CSS เพื่อไม่ให้ object initializer ล้มเหลว
+`test_android_regex.py` ตรวจ literal Regex จาก source24HDด้วย native ICU ก่อน build พร้อม testsเดิมที่ตรวจผลแยกโปสเตอร์/ตอน/ตัวเล่น
