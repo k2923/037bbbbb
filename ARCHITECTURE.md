@@ -29,9 +29,9 @@
 
 ## แพ็กเกจและการตรวจ
 
-เจ็ดแพ็กเกจที่เผยแพร่คือ ExampleProvider, TwentyFiveHD, MovieDoFree, Movie2FreeHD, AHDZero, TwentyFourHD, ThaiAnime
-ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมกับแพ็กเกจอื่นเป็นสิบสองเว็บไซต์
-มีตัวเลือกสำรองจาก samples อีกห้าตัวเลือก (ThaiAnime สาม, 24HD หนึ่ง, AHDZero หนึ่ง) รวมสิบเจ็ดตัวเลือกในแอป
+แปดแพ็กเกจที่เผยแพร่คือ ExampleProvider, TwentyFiveHD, MovieDoFree, Movie2FreeHD, AHDZero, TwentyFourHD, ThaiAnime, GoSeries4K
+ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมกับแพ็กเกจอื่นและ GoSeries4K เป็นสิบสามเว็บไซต์
+มีตัวเลือกสำรองจาก samples อีกห้าตัวเลือก (ThaiAnime สาม, 24HD หนึ่ง, AHDZero หนึ่ง) รวมสิบแปดตัวเลือกในแอป
 Indy/Hit/Your ใช้ TeamAnimeSite ระบุ route/selector/alias ของแต่ละเว็บ และใช้ TeamAnimeParser/TeamAnimePlayer/TeamAnimeProvider ร่วมกัน
 Site enum เดิมยังดูแล Neko/Ruka/Suba และแหล่งที่ปิดไว้ โดยคงตัวอ่านวิดีโอเดิม
 TeamAnimePlayer อ่านเฉพาะปุ่มจริง/dropdown/iframe ใน #mpPlayer; จัดสำรอง MP4/HLS ที่สังเกตได้ไว้ก่อน
@@ -92,3 +92,16 @@ Cloudstream เป็นผู้แสดงแถวรายการแน�
 โหมด samples ค้นจาก sampleCards และใช้หน้าหมวดใน bundledSamples เท่านั้น ไม่มี network enrichment เพิ่ม
 ถ้าไม่มีข้อมูลที่เกี่ยวข้องจะไม่ส่งเรื่องสุ่มแทน; ความคล้ายขึ้นกับข้อมูลเว็บและชื่อเรื่อง ไม่ใช่ระบบจัดอันดับของ AniList
 AniList ไม่เป็น dependency ของรุ่นนี้; การเพิ่มภายหลังต้องจับคู่ชื่อ/ID กับรายการที่เปิดได้ใน provider จริง
+
+## GoSeries4K
+
+โมดูลแยกใช้ MHTML ของผู้ใช้เป็น regression fixtures เท่านั้น ไม่เพิ่มโหมด samples หรือเปลี่ยน shared
+อ่านการ์ดจาก #main .list-movie/.s-grid และตอนจากปุ่ม mp-ep-btn จริง แยก audio group
+รวมรหัสตัวเล่นสำรองของตอนเดียวกัน ชื่อเรื่องที่ระบุ EP.1–40 ไม่ใช่รายการตอนที่พร้อมเล่น
+Playback payload เก็บ page URL และ episode IDs; ดึง iframe/session ใหม่ทุกครั้ง
+ตอนเริ่มต้นใช้ได้เมื่อ #mpPlayer data-post-id ตรง ID ที่เลือกเท่านั้น
+ตอนอื่นใช้ JavaScript ของหน้าจริงคลิกปุ่มเดิมใน native WebView สูงสุด8วินาที
+ตรวจ ID และ iframe เปลี่ยนจากตอนเริ่มต้นก่อนรับ Torbo embed แล้วจับ HLS request จริงอีกขั้นสูงสุด8วินาที
+ส่ง signature/query/headers/Referer ให้ native player ไม่ส่ง HTML เป็น media ไม่เปิด UI เว็บและไม่แก้ challenge
+คำแนะนำอ่านเฉพาะการ์ดซีรีส์ในหน้า detail (รวม wrapper .list-ads ซึ่งมีการ์ด content จริง) สูงสุด12รายการ
+สถานะทดลอง: catalog สดยัง403ใน sandbox; snapshot tests และ Chromium Torbo ไม่ใช่ผลทดสอบ Android
