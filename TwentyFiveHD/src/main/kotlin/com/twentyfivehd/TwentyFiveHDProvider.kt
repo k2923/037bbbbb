@@ -57,9 +57,9 @@ class TwentyFiveHDProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val detail = TwentyFiveParser.detail(document(url))
-        val bootstrap = ZmdbResolver.bootstrap(app.get(detail.embed, referer = url, interceptor = browserSession, cacheTime = 0).text)
-        if (bootstrap.path("content").path("mediaType").asText() == "tv") {
-            val episodes = ZmdbResolver.episodes(bootstrap, detail.embed).map {
+        val catalog = resolver().catalog(detail.embed, url)
+        if (catalog.series) {
+            val episodes = catalog.episodes.map {
                 newEpisode(PlaybackContext(it.url, url).encode()) { name = it.name; season = it.season; episode = it.number }
             }
             return newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, episodes) {
@@ -71,6 +71,11 @@ class TwentyFiveHDProvider : MainAPI() {
         }
     }
 
+    private fun resolver() = ZmdbResolver { url, referer, headers ->
+        val response = app.get(url, referer = referer, headers = headers, interceptor = browserSession, cacheTime = 0)
+        WebPage(response.url, response.text, response.code)
+    }
+
     override fun getVideoInterceptor(extractorLink: ExtractorLink): okhttp3.Interceptor? =
         HlsRouting.decode(extractorLink.extractorData)?.let { HlsRoutingInterceptor(it) }
 
@@ -78,10 +83,7 @@ class TwentyFiveHDProvider : MainAPI() {
         withBrowserFallback(PlaybackContext.decode(data).page, callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
 
     private suspend fun loadVideoLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val resolver = ZmdbResolver { url, referer, headers ->
-            val response = app.get(url, referer = referer, headers = headers, interceptor = browserSession, cacheTime = 0)
-            WebPage(response.url, response.text, response.code)
-        }
+        val resolver = resolver()
         var found = false
         val emit: (ExtractorLink) -> Unit = { found = true; callback(it) }
         val playback = PlaybackContext.decode(data)

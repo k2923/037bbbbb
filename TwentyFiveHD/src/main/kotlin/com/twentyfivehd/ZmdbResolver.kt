@@ -10,12 +10,51 @@ import kotlin.coroutines.cancellation.CancellationException
 
 internal data class WebPage(val url: String, val text: String, val status: Int = 200)
 internal data class ZmdbEpisode(val name: String, val season: Int, val number: Int, val url: String)
+internal data class ZmdbCatalog(val series: Boolean, val episodes: List<ZmdbEpisode> = emptyList())
 internal data class VideoStream(val label: String, val url: String, val referer: String, val hls: Boolean)
 
 internal class ZmdbResolver(private val get: suspend (String, String, Map<String, String>) -> WebPage) {
+    /** The source's explicit movie type is enough for metadata; playback stays fresh in resolve. */
+    suspend fun catalog(embed: String, referer: String): ZmdbCatalog {
+        if (query(embed)["type"] == "movie") return ZmdbCatalog(series = false)
+        val (_, data) = playerBootstrap(embed, referer)
+        return when (data.path("content").path("mediaType").asText()) {
+            "tv" -> ZmdbCatalog(series = true, episodes = episodes(data, embed))
+            "movie" -> {
+                check(query(embed)["type"] != "tv") { "ชนิดรายการจากตัวเล่นไม่ตรงกับซีรีส์" }
+                ZmdbCatalog(series = false)
+            }
+            else -> error("ไม่พบชนิดรายการจากตัวเล่น 25-HD")
+        }
+    }
+
+    /** Try the same public bootstrap API used by the player when its HTML is unavailable. */
+    private suspend fun playerBootstrap(embed: String, referer: String): Pair<WebPage, JsonNode> {
+        try {
+            val page = get(embed, referer, emptyMap())
+            check(page.status in 200..299) { "ตัวเล่น 25-HD ตอบ HTTP ${page.status}" }
+            val data = bootstrap(page.text)
+            check(data.path("content").isObject) { "ไม่พบข้อมูลรายการจากตัวเล่น 25-HD" }
+            return page to data
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            val params = query(embed).filterKeys { it == "id" || it == "type" }
+            if (params["id"].isNullOrBlank() || params["type"] !in setOf("movie", "tv")) throw error
+            val uri = URI(embed)
+            val origin = "${uri.scheme}://${uri.rawAuthority}"
+            val response = get("$origin/api/embed/bootstrap?${encode(params)}", embed, emptyMap())
+            check(response.status in 200..299) { "โหลดข้อมูลสำรอง 25-HD ไม่ได้ (HTTP ${response.status})" }
+            val data = mapper.readTree(response.text)
+            check(data.path("success").asBoolean() && data.path("content").isObject) {
+                "ตัวเล่นและ API สำรอง 25-HD ไม่ส่งข้อมูลรายการ"
+            }
+            // The API response is not a player page: retain the embed as playback Referer.
+            return WebPage(embed, "") to data
+        }
+    }
+
     suspend fun resolve(embed: String, referer: String): List<VideoStream> {
-        val page = get(embed, referer, emptyMap())
-        val bootstrap = bootstrap(page.text)
+        val (page, bootstrap) = playerBootstrap(embed, referer)
         if (bootstrap.path("content").path("isVipOnly").asBoolean() ||
             bootstrap.path("content").path("isComingSoon").asBoolean()) return emptyList()
         val origin = URI(page.url).let { "${it.scheme}://${it.rawAuthority}" }
