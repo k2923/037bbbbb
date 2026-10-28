@@ -30,7 +30,8 @@
 ## แพ็กเกจและการตรวจ
 
 เจ็ดแพ็กเกจที่เผยแพร่คือ ExampleProvider, TwentyFiveHD, MovieDoFree, Movie2FreeHD, AHDZero, TwentyFourHD, ThaiAnime
-ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมทั้งหมดสิบสองแหล่ง
+ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมกับแพ็กเกจอื่นเป็นสิบสองเว็บไซต์
+มีตัวเลือกสำรองจาก samples อีกห้าตัวเลือก (ThaiAnime สาม, 24HD หนึ่ง, AHDZero หนึ่ง) รวมสิบเจ็ดตัวเลือกในแอป
 Indy/Hit/Your ใช้ TeamAnimeSite ระบุ route/selector/alias ของแต่ละเว็บ และใช้ TeamAnimeParser/TeamAnimePlayer/TeamAnimeProvider ร่วมกัน
 Site enum เดิมยังดูแล Neko/Ruka/Suba และแหล่งที่ปิดไว้ โดยคงตัวอ่านวิดีโอเดิม
 TeamAnimePlayer อ่านเฉพาะปุ่มจริง/dropdown/iframe ใน #mpPlayer; จัดสำรอง MP4/HLS ที่สังเกตได้ไว้ก่อน
@@ -44,3 +45,11 @@ Hit อาจ redirect หน้าตอนใน browser แม้ HTTP HTML �
 แต่ละ module ตรวจ parser/resolver ของตัวเองจาก fixture ใน `samples/`; ข้อมูล fixture ต้องคง URL ต้นฉบับ ไม่สร้างเส้นทางจากชื่อไฟล์
 คำสั่งสร้างและทดสอบแพ็กเกจที่เปิดใช้งานอยู่ใน README ส่วนแพ็กเกจที่ปิดทดสอบได้ผ่าน Gradle init script ที่ include สอง module ชั่วคราว
 ผล unit test/HTML parser ไม่ยืนยันการเล่นจริงบน Mi Box หรือการเข้าถึงจากเครือข่ายผู้ใช้
+
+## Catalog snapshots ที่ผู้ใช้เลือกเอง
+
+เพิ่มแหล่งสำรองที่ระบุในชื่ออย่างชัดเจนสำหรับ 24HD/AHDZero/Neko/Ruka/Suba ตามคำขอใช้ samples
+นี่เป็นการขยายสัญญาเดิมที่ใช้ samples เฉพาะทดสอบ: โหมดสำรองอ่าน catalog/รายละเอียด/หน้าตอนเก่าได้
+ส่วนแหล่งสดใช้พฤติกรรมเดิม ตัวเล่นภายนอกและ session/media ต้องโหลดสดทั้งสองโหมด
+`SampleArchive` ใช้ URL ต้นฉบับเป็นกุญแจ ไม่ fallback โดยจับคู่ชื่อเรื่องหรือส่ง HTML เป็นวิดีโอ
+Generated `BundledSamples.kt` แยกตามแพ็กเกจและตรวจความตรงกันผ่านสคริปต์ก่อนเผยแพร่

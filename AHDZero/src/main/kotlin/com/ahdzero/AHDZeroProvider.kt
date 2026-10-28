@@ -1,6 +1,8 @@
 package com.ahdzero
 
 import android.content.Context
+import com.providers.network.SampleArchive
+import com.providers.samples.bundledSamples
 import com.providers.network.withBrowserFallback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
@@ -16,21 +18,30 @@ class AHDZeroPlugin : Plugin() {
     override fun load(context: Context) {
         val provider = AHDZeroProvider()
         registerMainAPI(provider)
+        registerMainAPI(AHDZeroProvider(sampleMode = true))
     }
 }
 
-class AHDZeroProvider : MainAPI() {
+class AHDZeroProvider(private val sampleMode: Boolean = false) : MainAPI() {
     override var mainUrl = "https://ahdzero.com"
-    override var name = "AHDZero"
+    override var name = "AHDZero" + if (sampleMode) " (${SampleArchive.LABEL})" else ""
     override var lang = "th"
     override val hasMainPage = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
     override var sequentialMainPage = false
     private val listingRequests = Semaphore(3)
-    override val mainPage = SiteCategories.homeEntries.map { (path, title) -> mainPage(mainUrl + path, title) }
+    override val mainPage = if (sampleMode) listOf(mainPage(mainUrl, SampleArchive.NOTICE)) else SiteCategories.homeEntries.map { (path, title) -> mainPage(mainUrl + path, title) }
     private val browserSession by lazy { BrowserSession() }
+    private val sampleCards: List<AnimeCard> by lazy {
+        val details = bundledSamples.documents(mainUrl, "detail").map { doc ->
+            val detail = AHDZeroParser.detail(doc)
+            AnimeCard(detail.title, doc.baseUri(), detail.poster, detail.movie)
+        }
+        (details + bundledSamples.documents(mainUrl, "listing").flatMap { AHDZeroParser.cards(it) }).distinctBy { it.url }
+    }
     private suspend fun document(url: String, fresh: Boolean = false): org.jsoup.nodes.Document {
+        if (sampleMode) bundledSamples.document(url)?.let { return it }
         val response = if (fresh) app.get(url, interceptor = browserSession, cacheTime = 0) else app.get(url, interceptor = browserSession)
         if (response.code !in 200..299) throw ErrorLoadingException("เว็บปฏิเสธการเข้าถึง (HTTP ${response.code})")
         return response.document.apply { setBaseUri(response.url) }
@@ -42,22 +53,25 @@ class AHDZeroProvider : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse = listingRequests.withPermit {
+        if (sampleMode) return@withPermit newHomePageResponse(
+            listOf(HomePageList(SampleArchive.NOTICE, if (page == 1) sampleCards.map { it.response() } else emptyList())), false
+        )
         val doc = document(AHDZeroParser.pageUrl(request.data, page))
         newHomePageResponse(listOf(HomePageList(request.name, AHDZeroParser.cards(doc).map { it.response() })), AHDZeroParser.hasNext(doc, page))
     }
 
-    override suspend fun search(query: String): List<SearchResponse> = AHDZeroParser.cards(document("$mainUrl/search/results?q=${URLEncoder.encode(query, "UTF-8")}")).map { it.response() }
+    override suspend fun search(query: String): List<SearchResponse> = if (sampleMode) sampleCards.filter { it.title.contains(query.trim(), ignoreCase = true) }.map { it.response() } else AHDZeroParser.cards(document("$mainUrl/search/results?q=${URLEncoder.encode(query, "UTF-8")}")).map { it.response() }
 
     override suspend fun load(url: String): LoadResponse {
         val detail = AHDZeroParser.detail(document(url))
         if (detail.movie) {
             val episode = detail.episodes.firstOrNull() ?: throw ErrorLoadingException("ยังไม่มีตอนให้รับชม")
             return newMovieLoadResponse(detail.title, url, TvType.AnimeMovie, episode.url) {
-                posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot
+                posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
             }
         }
         return newAnimeLoadResponse(detail.title, url, TvType.Anime) {
-            posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = detail.plot
+            posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url); plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot
             addEpisodes(if (detail.title.contains("พากย์ไทย")) DubStatus.Dubbed else DubStatus.Subbed,
                 detail.episodes.map { ep -> newEpisode(ep.url) { name = ep.title; episode = ep.number } })
         }
