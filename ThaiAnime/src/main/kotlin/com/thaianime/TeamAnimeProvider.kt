@@ -2,8 +2,7 @@ package com.thaianime
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.providers.network.withBrowserFallback
-import com.providers.network.ProviderBrowser
+import com.providers.network.withNativePlayback
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.jsoup.nodes.Document
@@ -50,14 +49,10 @@ internal class TeamAnimeProvider(private val site: TeamAnimeSite) : MainAPI() {
         }
     }
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        var fallbackUrl = data
-        return withBrowserFallback(data, callback, openBrowser = { ProviderBrowser.open(fallbackUrl) }) { emit ->
+        return withNativePlayback(callback) { emit ->
             val emitted = mutableSetOf<String>()
             val unique: (ExtractorLink) -> Unit = { if (emitted.add(it.url)) emit(it) }
             suspend fun resolve(doc: Document) {
-                // Hit's episode HTML is available over HTTP but its browser navigation may redirect home.
-                // Open its advertised player directly if native extraction cannot produce a stream.
-                if (site == TeamAnimeSite.HIT) TeamAnimePlayer.sources(doc).firstOrNull()?.let { fallbackUrl = it.url }
                 TeamAnimePlayer.resolve(doc,
                 get = { url, referer -> document(url, referer, fresh = true) },
                 extract = { source, referer -> loadExtractor(source.url, referer, subtitleCallback, unique); Unit },
@@ -77,7 +72,7 @@ internal class TeamAnimeProvider(private val site: TeamAnimeSite) : MainAPI() {
                     }
                 }
             }
-            if (emitted.isEmpty()) throw ErrorLoadingException("$name ตัวเล่นที่เว็บระบุใช้ไม่ได้หรือยังไม่รองรับ ลองเลือกเซิร์ฟเวอร์ในเว็บสำรอง")
+            if (emitted.isEmpty()) throw ErrorLoadingException("$name ตัวเล่นที่เว็บระบุใช้ไม่ได้หรือยังไม่รองรับ ลองเลือกตัวเล่นสำรองอื่น")
             true
         }
     }

@@ -2,7 +2,7 @@ package com.twentyfivehd
 
 import com.fasterxml.jackson.databind.ObjectMapper
 
-/** Keep the original detail page for web playback, while accepting previously saved embed URLs. */
+/** Keep the original detail page as the player Referer, accepting previously saved embed URLs. */
 internal data class PlaybackContext(val player: String, val page: String) {
     fun encode(): String = mapper.writeValueAsString(mapOf("player" to player, "page" to page))
     companion object {
@@ -13,7 +13,7 @@ internal data class PlaybackContext(val player: String, val page: String) {
             val player = value.path("player").asText()
             val page = value.path("page").asText()
             require(player.startsWith("https://") || player.startsWith("http://")) { "ไม่พบลิงก์ตัวเล่น" }
-            require(page.startsWith("https://") || page.startsWith("http://")) { "ไม่พบหน้าเว็บสำรอง" }
+            require(page.startsWith("https://") || page.startsWith("http://")) { "ไม่พบหน้ารายละเอียด" }
             return PlaybackContext(player, page)
         }
     }

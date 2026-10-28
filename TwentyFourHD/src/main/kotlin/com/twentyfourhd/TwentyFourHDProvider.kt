@@ -3,7 +3,7 @@ package com.twentyfourhd
 import android.content.Context
 import com.providers.network.SampleArchive
 import com.providers.samples.bundledSamples
-import com.providers.network.withBrowserFallback
+import com.providers.network.withNativePlayback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -101,7 +101,7 @@ class TwentyFourHDProvider(private val sampleMode: Boolean = false) : MainAPI() 
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean =
-        withBrowserFallback(data.substringBefore('#'), callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
+        withNativePlayback(callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
 
     private suspend fun loadVideoLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val page = data.substringBefore('#')

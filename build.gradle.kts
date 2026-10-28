@@ -79,7 +79,7 @@ subprojects {
         // but you don't need to include any of them if you don't need them.
         // https://github.com/recloudstream/cloudstream/blob/master/app/build.gradle.kts
         implementation(kotlin("stdlib")) // Adds Standard Kotlin Features
-        // Cloudstream supplies coroutines at runtime; web fallback uses cancellable continuations.
+        // Cloudstream supplies coroutines at runtime; resolvers use cancellable coroutines.
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
         // Required when Kotlin reads nullability annotations from the Cloudstream API.
         implementation("org.jspecify:jspecify:1.0.0")

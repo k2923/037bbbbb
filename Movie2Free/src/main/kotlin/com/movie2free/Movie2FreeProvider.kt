@@ -1,7 +1,7 @@
 package com.movie2free
 
 import android.content.Context
-import com.providers.network.withBrowserFallback
+import com.providers.network.withNativePlayback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -64,7 +64,7 @@ class Movie2FreeProvider : MainAPI() {
         if (extractorLink.extractorData == "fastcdn-png545") FastCdnInterceptor() else null
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean =
-        withBrowserFallback(data, callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
+        withNativePlayback(callback) { emit -> loadVideoLinks(data, isCasting, subtitleCallback, emit) }
 
     private suspend fun loadVideoLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         var found = false
