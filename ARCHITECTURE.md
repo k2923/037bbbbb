@@ -30,7 +30,8 @@
 ## แพ็กเกจและการตรวจ
 
 เจ็ดแพ็กเกจที่เผยแพร่คือ ExampleProvider, TwentyFiveHD, MovieDoFree, Movie2FreeHD, AHDZero, TwentyFourHD, ThaiAnime
-ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมทั้งหมดสิบสองแหล่ง
+ThaiAnime ลงทะเบียน AnimeRuka/AnimeYour/Hit-Anime/Indy-Anime/Neko-Miku/Suba-Anime รวมกับแพ็กเกจอื่นเป็นสิบสองเว็บไซต์
+มีตัวเลือกสำรองจาก samples อีกห้าตัวเลือก (ThaiAnime สาม, 24HD หนึ่ง, AHDZero หนึ่ง) รวมสิบเจ็ดตัวเลือกในแอป
 Indy/Hit/Your ใช้ TeamAnimeSite ระบุ route/selector/alias ของแต่ละเว็บ และใช้ TeamAnimeParser/TeamAnimePlayer/TeamAnimeProvider ร่วมกัน
 Site enum เดิมยังดูแล Neko/Ruka/Suba และแหล่งที่ปิดไว้ โดยคงตัวอ่านวิดีโอเดิม
 TeamAnimePlayer อ่านเฉพาะปุ่มจริง/dropdown/iframe ใน #mpPlayer; จัดสำรอง MP4/HLS ที่สังเกตได้ไว้ก่อน
@@ -44,3 +45,30 @@ Hit อาจ redirect หน้าตอนใน browser แม้ HTTP HTML �
 แต่ละ module ตรวจ parser/resolver ของตัวเองจาก fixture ใน `samples/`; ข้อมูล fixture ต้องคง URL ต้นฉบับ ไม่สร้างเส้นทางจากชื่อไฟล์
 คำสั่งสร้างและทดสอบแพ็กเกจที่เปิดใช้งานอยู่ใน README ส่วนแพ็กเกจที่ปิดทดสอบได้ผ่าน Gradle init script ที่ include สอง module ชั่วคราว
 ผล unit test/HTML parser ไม่ยืนยันการเล่นจริงบน Mi Box หรือการเข้าถึงจากเครือข่ายผู้ใช้
+
+## Catalog snapshots ที่ผู้ใช้เลือกเอง
+
+เพิ่มแหล่งสำรองที่ระบุในชื่ออย่างชัดเจนสำหรับ 24HD/AHDZero/Neko/Ruka/Suba ตามคำขอใช้ samples
+นี่เป็นการขยายสัญญาเดิมที่ใช้ samples เฉพาะทดสอบ: โหมดสำรองอ่าน catalog/รายละเอียด/หน้าตอนเก่าได้
+ส่วนแหล่งสดใช้พฤติกรรมเดิม ตัวเล่นภายนอกและ session/media ต้องโหลดสดทั้งสองโหมด
+`SampleArchive` ใช้ URL ต้นฉบับเป็นกุญแจ ไม่ fallback โดยจับคู่ชื่อเรื่องหรือส่ง HTML เป็นวิดีโอ
+Generated `BundledSamples.kt` แยกตามแพ็กเกจและตรวจความตรงกันผ่านสคริปต์ก่อนเผยแพร่
+
+## การโหลดรายละเอียด 25-HD
+
+เมื่อ embed ระบุ `type=movie` ใช้ข้อมูลหนังจากหน้าเว็บหลักได้ทันที แล้วโหลด player/session ใหม่ตอนเล่น
+ซีรีส์และรายการที่ยังไม่ทราบชนิดต้องอ่าน bootstrap จริงเพื่อสร้างตอน เมื่อ HTML ใช้ไม่ได้
+ลอง `/api/embed/bootstrap` ของ origin เดิมหนึ่งครั้งด้วย id/type เท่านั้นและรักษา cancellation
+API ต้องตอบสำเร็จพร้อม content; กรณีซีรีส์ห้ามใช้ movie แทนหรือสร้างตอนที่ไม่มีลิงก์
+ไม่มีการเก็บ bootstrap/token เพื่อใช้เล่นครั้งถัดไป และไม่มีตัวแก้ challenge เพิ่มใน BrowserSession
+
+## Catalog สด 24HD และแหล่งหลัก
+
+แหล่งหลักทั้ง12เว็บไซต์ขอข้อมูลเว็บสดเสมอ; samples เป็นอีก5ตัวเลือกที่ผู้ใช้เลือกเอง ไม่เปลี่ยนเป็น samples อัตโนมัติเมื่อ HTTP403
+24HD ใช้ public `/wp-json/wp/v2/posts` ของเว็บเดิม และค้น taxonomy ID ด้วย slug ของหมวดเดิม
+เก็บเฉพาะ taxonomy ID; จำนวนหน้าจาก `X-WP-TotalPages`, search/page/category ส่งถึง API จริง
+รายละเอียดต้องตรง URL เรื่องที่เลือก; ACF `file`/`file_2` และ `ep_list` เป็น URL ตัวเล่นจริง
+ไม่สร้างตอนตามจำนวนที่โฆษณาในชื่อเรื่อง และรวมตัวเล่นสำรองของตอนหมายเลขเดียวกัน
+เมื่อ API ผิดพลาดลอง parser HTML เดิมเพื่อให้เครือข่าย/เครื่องที่เข้า HTML ได้ยังใช้ได้ และรักษา cancellation
+ตอนกดเล่นขอรายละเอียด/ACF ใหม่ด้วย cacheTime=0 ก่อนโหลดตัวเล่นสด ไม่มีการใช้ media/session จาก fixture
+ผล403จาก sandbox ไม่ใช้เป็นเหตุปิดแหล่งหลักหรือเปลี่ยนตัวอ่านที่ทำงานบนเครื่องผู้ใช้

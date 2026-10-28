@@ -1,6 +1,8 @@
 package com.thaianime
 
 import android.content.Context
+import com.providers.network.SampleArchive
+import com.providers.samples.bundledSamples
 import com.providers.network.withBrowserFallback
 import com.lagradost.cloudstream3.*
 import com.providers.network.BrowserSession
@@ -19,23 +21,31 @@ internal object AnimeNetwork {
 @CloudstreamPlugin
 class ThaiAnimePlugin : Plugin() {
     override fun load(context: Context) {
-        (Site.enabled.map { ThaiAnimeProvider(it) } + TeamAnimeSite.values().map { TeamAnimeProvider(it) })
+        (Site.enabled.flatMap { listOf(ThaiAnimeProvider(it), ThaiAnimeProvider(it, sampleMode = true)) } + TeamAnimeSite.values().map { TeamAnimeProvider(it) })
             .sortedBy { it.name.lowercase() }.forEach { registerMainAPI(it) }
     }
 }
 
-internal class ThaiAnimeProvider(private val site: Site) : MainAPI() {
+internal class ThaiAnimeProvider(private val site: Site, private val sampleMode: Boolean = false) : MainAPI() {
     override var mainUrl = site.base
-    override var name = site.label
+    override var name = site.label + if (sampleMode) " (${SampleArchive.LABEL})" else ""
     override var lang = "th"
     override val hasMainPage = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
     override var sequentialMainPage = false
     private val listingRequests = Semaphore(3)
-    override val mainPage = AnimeCategories.homeEntries.getValue(site).map { (path, title) -> mainPage(mainUrl + path, title) }
+    override val mainPage = if (sampleMode) listOf(mainPage(mainUrl, SampleArchive.NOTICE)) else AnimeCategories.homeEntries.getValue(site).map { (path, title) -> mainPage(mainUrl + path, title) }
     private val browserSession get() = AnimeNetwork.browserSession
+    private val sampleCards: List<AnimeCard> by lazy {
+        val details = bundledSamples.documents(mainUrl, "detail").map { doc ->
+            val detail = AnimeParser.detail(site, doc)
+            AnimeCard(detail.title, doc.baseUri(), detail.poster, detail.movie)
+        }
+        (details + bundledSamples.documents(mainUrl, "listing").flatMap { AnimeParser.cards(site, it) }).distinctBy { it.url }
+    }
     private suspend fun document(url: String, fresh: Boolean = false, referer: String = mainUrl): org.jsoup.nodes.Document {
+        if (sampleMode) bundledSamples.document(url)?.let { return it }
         val wakuPlayback = site == Site.WAKU && fresh
         val headers = when {
             wakuPlayback && WakuPlayer.playerPattern.matches(url) -> mapOf("User-Agent" to WakuPlayer.mediaUserAgent)
@@ -54,17 +64,20 @@ internal class ThaiAnimeProvider(private val site: Site) : MainAPI() {
         if (title.contains("ซับไทย") || !title.contains("พากย์ไทย")) addDubStatus(DubStatus.Subbed)
     }
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse = listingRequests.withPermit {
+        if (sampleMode) return@withPermit newHomePageResponse(
+            listOf(HomePageList(SampleArchive.NOTICE, if (page == 1) sampleCards.map { it.response() } else emptyList())), false
+        )
         val doc = document(AnimeParser.pageUrl(site, request.data, page))
         newHomePageResponse(listOf(HomePageList(request.name, AnimeParser.cards(site, doc).map { it.response() })), AnimeParser.next(site, doc) != null)
     }
-    override suspend fun search(query: String): List<SearchResponse> = AnimeParser.cards(site, document(AnimeParser.searchUrl(site, query))).map { it.response() }
+    override suspend fun search(query: String): List<SearchResponse> = if (sampleMode) sampleCards.filter { it.title.contains(query.trim(), ignoreCase = true) }.map { it.response() } else AnimeParser.cards(site, document(AnimeParser.searchUrl(site, query))).map { it.response() }
     override suspend fun load(url: String): LoadResponse {
         val detail = AnimeParser.detail(site, document(url))
         if (detail.movie) return newMovieLoadResponse(detail.title, url, TvType.AnimeMovie, url) {
-            posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
         }
         return newAnimeLoadResponse(detail.title, url, TvType.Anime) {
-            posterUrl = detail.poster; plot = detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
+            posterUrl = detail.poster; plot = if (sampleMode) "${SampleArchive.NOTICE}\n\n${detail.plot.orEmpty()}" else detail.plot; tags = detail.tags; posterHeaders = mapOf("Referer" to url)
             detail.episodes.groupBy { if (it.dubbed) DubStatus.Dubbed else DubStatus.Subbed }.forEach { (dub, episodes) ->
                 addEpisodes(dub, episodes.map { ep -> newEpisode(ep.url) { name = ep.title; episode = ep.number; season = ep.season } })
             }

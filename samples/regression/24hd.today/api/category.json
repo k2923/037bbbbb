@@ -1,0 +1,48 @@
+[
+  {
+    "id": 36300,
+    "count": 726,
+    "description": "<p dir=\"auto\"><strong>ดูซีรี่ย์จีน</strong> เรื่องเด็ด <strong>ซีรี่ย์จีน 2025</strong> และ <strong>ซีรี่ย์จีน ล่าสุด</strong> มาใหม่ทุกวัน ครบทุกรสทั้ง <strong>ซีรี่ย์จีนพากย์ไทย</strong> เต็มเรื่อง, <strong>ซีรี่ย์จีนซับไทย</strong>, <strong>ดูซีรี่ย์จีนพากย์ไทย</strong>, <strong>ดูซีรี่ย์จีนซับไทย</strong> และ <strong>มินิ ซีรี่ย์จีน พากย์ไทย</strong> ง่ายๆ ด้วย <strong>ซีรี่ย์จีนแนวตั้ง</strong></p>\r\n<p dir=\"auto\">ชื่นชอบแนว <strong>ซีรี่ย์จีน วาย</strong>, <strong>ซีรี่ย์จีนย้อนยุค</strong>, <strong>ซีรี่ย์จีนพากย์ไทยย้อนยุค</strong>, <strong>ซีรี่ย์จีน หมอ</strong> หรือ <strong>ซีรี่ย์จีนล่าหยก</strong> ก็มีให้เลือกเพียบ พร้อม <strong>ซีรี่ย์จีนสั้น</strong> และ <strong>ซีรี่ย์จีน 1112</strong> ที่หลายคนกำลังติดตาม <strong>ซีรี่ย์จีน น่าดู</strong> อัพเดทต่อเนื่อง <strong>ซีรี่ย์จีนพากย์ไทยล่าสุด</strong> ดูได้ทุกที่บน 24hd.net</p>",
+    "link": "https://www.24hd.today/category/%e0%b8%8b%e0%b8%b5%e0%b8%a3%e0%b8%b5%e0%b9%88%e0%b8%a2%e0%b9%8c%e0%b8%88%e0%b8%b5%e0%b8%99/",
+    "name": "ดูซีรี่ย์จีน ซีรี่ย์จีนแนวตั้ง ไม่กระตุกดูฟรี ซีรี่ย์จีน 123 มีให้ดูทุกเรื่อง",
+    "slug": "%e0%b8%8b%e0%b8%b5%e0%b8%a3%e0%b8%b5%e0%b9%88%e0%b8%a2%e0%b9%8c%e0%b8%88%e0%b8%b5%e0%b8%99",
+    "taxonomy": "category",
+    "parent": 0,
+    "meta": [],
+    "acf": [],
+    "_links": {
+      "self": [
+        {
+          "href": "https://www.24hd.today/wp-json/wp/v2/categories/36300",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "href": "https://www.24hd.today/wp-json/wp/v2/categories"
+        }
+      ],
+      "about": [
+        {
+          "href": "https://www.24hd.today/wp-json/wp/v2/taxonomies/category"
+        }
+      ],
+      "wp:post_type": [
+        {
+          "href": "https://www.24hd.today/wp-json/wp/v2/posts?categories=36300"
+        }
+      ],
+      "curies": [
+        {
+          "name": "wp",
+          "href": "https://api.w.org/{rel}",
+          "templated": true
+        }
+      ]
+    }
+  }
+]

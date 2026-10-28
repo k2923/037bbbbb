@@ -29,7 +29,8 @@ internal object MovieDoFreeParser {
     fun detail(document: Document): MovieDetail = MovieDetail(
         document.selectFirst(".box-header .title h1")?.text()?.trim().orEmpty(),
         poster(document.selectFirst(".column_1_center center img")),
-        document.selectFirst(".entry-content p, .synopsis")?.text()?.takeIf { it.isNotBlank() },
+        document.select(".column_1_center .blog.column > p, .column_1_center .entry-content p, .column_1_center .synopsis")
+            .asSequence().map { it.text() }.firstOrNull { it.isNotBlank() },
         document.selectFirst("iframe#frame[src]")?.absUrl("src") ?: error("ไม่พบตัวเล่นของ Moviedofree")
     )
 

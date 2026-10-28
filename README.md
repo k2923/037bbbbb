@@ -1,5 +1,24 @@
 ## สถานะล่าสุด
 
+- **24HD v11 ใช้ข้อมูลสด** จาก public WordPress API ของ `www.24hd.today` สำหรับรายการ/หมวด/ค้นหา/แบ่งหน้า/รายละเอียด
+  อ่าน ACF ตัวเล่นและตอนจริงใหม่เมื่อกดเล่น หาก API ใช้ไม่ได้จะลองตัวอ่าน HTML เดิม
+  ทดสอบ 5 หมวดหลัก หน้า2 ค้นหา หนังและซีรีส์ผ่าน API ได้ แม้หน้าเว็บ HTML ตอบ403จาก sandbox
+- แหล่งหลักทั้ง **12 เว็บไซต์ยังเข้าถึงเว็บสด** ตาม URL/ตัวอ่านเฉพาะเว็บ ไม่ปิดเว็บเพียงเพราะ sandbox ตอบ403
+  แหล่งที่มีชื่อ **(สำรองจาก samples)** เป็นตัวเลือกข้อมูลเก่าเพิ่มอีก5แหล่ง ผู้ใช้เลือกเอง
+  ผล403จาก sandbox ไม่ยืนยันผลบนเครื่องจริง; Ruka คงตัวอ่านวิดีโอที่ผู้ใช้ยืนยันว่าเล่นได้
+
+- 25-HD v11 เปิดรายละเอียดหนังที่ระบุ `type=movie` ได้โดยไม่ต้องรอเว็บตัวเล่นก่อน
+  เมื่อกดเล่นยังโหลดข้อมูลใหม่; ถ้า HTML ตัวเล่นเสีย ใช้ public bootstrap API ของเว็บเดิมหนึ่งครั้ง
+  ซีรีส์ใช้รายการตอนจริงจาก HTML/API คง season/episode และไม่เปลี่ยนเป็นหนังเมื่อโหลดข้อมูลล้มเหลว
+- Moviedofree v12 อ่านเรื่องย่อจาก `.blog.column` ในส่วนเนื้อหาตาม HTML ปัจจุบัน
+  ความช้าของเซิร์ฟเวอร์หมวดยังไม่ได้แก้; ไม่มีผลยืนยันการเล่นบน Android ในรอบนี้
+
+- รอบแก้ repository/samples: 037-HDD v15, 25-HD v10, Moviedofree v11, Movie2FreeHD v10,
+  AHDZero v10, 24HD v10, ThaiAnime v15; แก้ URL ติดตั้งและ manifest ให้ชี้ poppo112/037bbbb
+- เพิ่มตัวเลือก **(สำรองจาก samples)** อีก 5 แหล่งสำหรับ 24HD/AHDZero/Neko-Miku/AnimeRuka/Suba-Anime
+  รวม 17 ตัวเลือกในแอปจาก 12 เว็บไซต์เดิม ดูวิธีใช้และข้อจำกัดท้ายเอกสาร
+
+
 - ThaiAnime v14 เพิ่ม **Hit-Anime / AnimeYour** รวมกับ Indy-Anime ที่เพิ่มใน v13
   แหล่งเรียงชื่อ: AnimeRuka / AnimeYour / Hit-Anime / Indy-Anime / Neko-Miku / Suba-Anime
 - Indy/Hit/Your ใช้ `TeamAnimeSite`, `TeamAnimeParser`, `TeamAnimePlayer`, `TeamAnimeProvider` ร่วมกัน
@@ -71,7 +90,7 @@
 
 ## ปลั๊กอินสำหรับ Cloudstream
 
-เพิ่ม repository ด้วย `https://raw.githubusercontent.com/Sirozaki2/037bbb/master/repo.json`
+เพิ่ม repository ด้วย `https://raw.githubusercontent.com/poppo112/037bbbb/master/repo.json`
 หากเคยเพิ่ม repository ของ `jasdwa22/037bb` ให้เพิ่ม URL ด้านบนเพื่อรับเวอร์ชันของ fork นี้
 แล้วติดตั้งหรืออัปเดตปลั๊กอินจาก repository นี้ในรายการส่วนขยาย:
 
@@ -158,7 +177,7 @@ FastCDN ตัวอย่างมี PNG prefix 545 ไบต์ก่อน M
 ทดสอบทุก provider และสร้างแพ็กเกจ:
 
 ```bash
-GITHUB_REPOSITORY=Sirozaki2/037bbb ./gradlew make makePluginsJson testDebugUnitTest
+GITHUB_REPOSITORY=poppo112/037bbbb ./gradlew make makePluginsJson testDebugUnitTest
 ```
 
 ใช้ JDK 17, Android SDK 35 และกำหนด `ANDROID_HOME` ให้ถูกต้อง
@@ -224,3 +243,23 @@ Everything in this repo is released into the public domain. You may use it howev
 
 This template as well as the gradle plugin and the whole plugin system is **heavily** based on [Aliucord](https://github.com/Aliucord).
 *Go use it, it's a great mobile discord client mod!*
+
+## แหล่งสำรองจาก HTML ที่บันทึกไว้
+
+เพิ่ม 24HD / AHDZero / Neko-Miku / AnimeRuka / Suba-Anime ที่มีชื่อท้ายว่า **(สำรองจาก samples)**
+เลือกแหล่งนี้ใน Cloudstream เมื่อแหล่งสดเข้าไม่ได้ หน้าแรกและค้นหาทำงานจากข้อมูลที่รวมอยู่ในแพ็กเกจ
+ไม่ต้องดาวน์โหลด samples จาก GitHub ตอนใช้งาน และไม่มีการลองผ่าน Cloudflare ซ้ำก่อนแสดงรายการ
+รายการไม่ครบและไม่ใช่ข้อมูลล่าสุด; เรื่องที่มีรายละเอียดบันทึกไว้จะอยู่ก่อนรายการอื่น
+รายละเอียดหรือตอนที่ไม่มีในชุดสำรองยังต้องโหลดเว็บจริง รูปปกยังอาศัยเครือข่าย
+
+แหล่งสำรองอ่านเฉพาะหน้า catalog/รายละเอียด/ตอนจาก snapshots; ตัวเล่นภายนอก, API, session และ media
+ยังโหลดใหม่เมื่อกดเล่น ไม่รับประกันว่าจะผ่าน Cloudflare หรือวิดีโอยังอยู่
+สคริปต์สร้างชุดสำรองลบ JavaScript ที่บันทึกไว้ คง JSON-LD สำหรับ URL embed และกู้ iframe เฉพาะ URL
+ที่ Chrome บันทึกไว้จริงในไฟล์ลูก ไม่มีการเดา URL จากชื่อไฟล์ และไม่มีการนำ player response เก่ามาเล่น
+
+สร้างใหม่หลังแก้ samples: `python3 scripts/generate_sample_catalog.py`
+ตรวจว่าไฟล์ที่รวมไว้ตรงกับ samples: `python3 scripts/generate_sample_catalog.py --check`
+
+repo.json และ URL ติดตั้งชี้ที่ `poppo112/037bbbb` แล้ว; workflow ต้องทำงานบน master/main
+หรือกด Run workflow หลังรวมการเปลี่ยนแปลง เพื่อเผยแพร่ไฟล์ใหม่บน builds
+workflow รันทดสอบก่อนเผยแพร่ และเพิ่ม commit ใหม่บน builds โดยไม่เขียนประวัติทับ

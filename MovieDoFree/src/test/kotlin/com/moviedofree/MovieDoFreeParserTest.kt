@@ -47,6 +47,30 @@ class MovieDoFreeParserTest {
         assertNull(detail.plot)
     }
 
+    @Test fun `current site synopsis is read from content blog not sidebar`() {
+        val doc = Jsoup.parse("""<aside><div class="blog column"><p>Advertisement</p></div></aside>
+            <div class="column_1_center"><div class="box-header"><div class="title"><h1>Spermworld (2024)</h1></div></div>
+            <iframe id="frame" src="/play.php?vid=M14310"></iframe>
+            <div class="blog column"><p>ชายสามคนเข้าสู่ฟอรั่มออนไลน์</p></div></div>""", base)
+        assertEquals("ชายสามคนเข้าสู่ฟอรั่มออนไลน์", MovieDoFreeParser.detail(doc).plot)
+    }
+
+    @Test fun `empty synopsis paragraphs do not hide later content`() {
+        val doc = Jsoup.parse("""<div class="column_1_center">
+            <iframe id="frame" src="/play.php?vid=M14310"></iframe>
+            <div class="blog column"><p></p><p> &nbsp; </p><p>เรื่องย่อที่มีข้อความ</p></div></div>""", base)
+        assertEquals("เรื่องย่อที่มีข้อความ", MovieDoFreeParser.detail(doc).plot)
+    }
+
+    @Test fun `legacy synopsis selectors ignore sidebar content`() {
+        for (sidebar in listOf("<div class=entry-content><p>Advertisement</p></div>", "<div class=synopsis>Advertisement</div>")) {
+            val doc = Jsoup.parse("""<aside>$sidebar</aside><div class=column_1_center>
+                <iframe id=frame src="/play.php?vid=M1"></iframe>
+                <div class=synopsis>Actual synopsis</div></div>""", base)
+            assertEquals("Actual synopsis", MovieDoFreeParser.detail(doc).plot)
+        }
+    }
+
     @Test fun `extracts signed main movie HLS and ignores advertisement video`() {
         val html = """
             jwplayer('adsplayer').setup({sources:[{file:'https://ads.example/ad.m3u8'}]});
