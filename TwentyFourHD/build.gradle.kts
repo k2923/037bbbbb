@@ -1,5 +1,5 @@
 dependencies { testImplementation("junit:junit:4.13.2") }
-version = 14
+version = 15
 cloudstream {
     language = "th"
     description = "24HD หนังและซีรี่ย์"

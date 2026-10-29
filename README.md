@@ -1,3 +1,9 @@
+## แก้ 24HD Bloodhounds (2023)
+
+- 24HD v15 อ่านตัวเล่น ongetplay ที่ซ้อน iframe และส่ง Referer ของ iframe ให้ HLS
+- ตอนที่ไม่มีลิงก์สำรองจริงยังต้องใช้ตัวเล่นหลัก; ไม่สร้างลิงก์จากตอนอื่น
+- GoSeries v2 อยู่ใน PR นี้ แต่ builds ที่เผยแพร่อยู่ยังเป็น v1; ต้องเผยแพร่หลังรวม PR ก่อนทดสอบผ่าน repo
+
 ## รอบแก้ GoSeries4K / repository (2026-10-29)
 
 - GoSeries4K v2: ขอ session/HLS ใหม่ผ่าน Torbo API และตรวจ manifest ก่อนส่งให้เครื่องเล่น

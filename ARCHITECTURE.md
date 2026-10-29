@@ -93,6 +93,10 @@ Cloudstream เป็นผู้แสดงแถวรายการแน�
 ถ้าไม่มีข้อมูลที่เกี่ยวข้องจะไม่ส่งเรื่องสุ่มแทน; ความคล้ายขึ้นกับข้อมูลเว็บและชื่อเรื่อง ไม่ใช่ระบบจัดอันดับของ AniList
 AniList ไม่เป็น dependency ของรุ่นนี้; การเพิ่มภายหลังต้องจับคู่ชื่อ/ID กับรายการที่เปิดได้ใน provider จริง
 
+## 24HD wrapper player
+
+บางตอน เช่น Bloodhounds (2023) EP.1 ส่ง iframe ภายใน ongetplay.xyz; ตามเฉพาะ iframe player ที่ยืนยันแล้วบน playermhd.p2phls.xyz และใช้ URL ของ iframe เป็น Referer ของ HLS โดยไม่เปิดหน้าต่างเว็บ ไม่ตาม iframe โฆษณา และไม่เปลี่ยนเลขตอนเมื่อมี redirect
+
 ## GoSeries4K
 
 โมดูลแยกใช้ MHTML ของผู้ใช้เป็น regression fixtures เท่านั้น ไม่เพิ่มโหมด samples หรือเปลี่ยน shared
