@@ -119,10 +119,12 @@ class TwentyFourHDProvider(private val sampleMode: Boolean = false) : MainAPI() 
         for ((index, url) in players.withIndex()) {
             // A broken backup must not discard links already found from another player.
             val result = runCatching {
-                val response = app.get(url, referer = page, interceptor = browserSession, cacheTime = 0)
-                TwentyFourHDParser.stream(response.document.apply { setBaseUri(response.url) })?.let { stream ->
-                    callback(newExtractorLink(name, listOfNotNull(detail.audio, if (index == 0) "ตัวเล่นหลัก" else "สำรอง $index").joinToString(" - "), stream, ExtractorLinkType.M3U8) {
-                        referer = response.url; quality = Qualities.Unknown.value
+                TwentyFourHDPlayer.resolve(url, page) { target, ref, allowRedirects ->
+                    val response = app.get(target, referer = ref, interceptor = browserSession, cacheTime = 0, allowRedirects = allowRedirects)
+                    PlayerDocument(response.url, response.document.apply { setBaseUri(response.url) }, response.code)
+                }?.let { stream ->
+                    callback(newExtractorLink(name, listOfNotNull(detail.audio, if (index == 0) "ตัวเล่นหลัก" else "สำรอง $index").joinToString(" - "), stream.url, ExtractorLinkType.M3U8) {
+                        referer = stream.referer; quality = Qualities.Unknown.value
                     })
                     true
                 } ?: false

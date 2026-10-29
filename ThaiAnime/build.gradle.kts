@@ -1,4 +1,4 @@
-version = 17
+version = 18
 cloudstream {
     language = "th"
     description = "AnimeRuka, AnimeYour, Hit-Anime, Indy-Anime, Neko-Miku, Suba-Anime (ทดลอง: การเล่นขึ้นกับโฮสต์วิดีโอ)"

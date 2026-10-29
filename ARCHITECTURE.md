@@ -93,6 +93,10 @@ Cloudstream เป็นผู้แสดงแถวรายการแน�
 ถ้าไม่มีข้อมูลที่เกี่ยวข้องจะไม่ส่งเรื่องสุ่มแทน; ความคล้ายขึ้นกับข้อมูลเว็บและชื่อเรื่อง ไม่ใช่ระบบจัดอันดับของ AniList
 AniList ไม่เป็น dependency ของรุ่นนี้; การเพิ่มภายหลังต้องจับคู่ชื่อ/ID กับรายการที่เปิดได้ใน provider จริง
 
+## 24HD wrapper player
+
+บางตอน เช่น Bloodhounds (2023) EP.1 ส่ง iframe ภายใน ongetplay.xyz; ตามเฉพาะ iframe player ที่ยืนยันแล้วบน playermhd.p2phls.xyz และใช้ URL ของ iframe เป็น Referer ของ HLS โดยไม่เปิดหน้าต่างเว็บ ไม่ตาม iframe โฆษณา และไม่เปลี่ยนเลขตอนเมื่อมี redirect
+
 ## GoSeries4K
 
 โมดูลแยกใช้ MHTML ของผู้ใช้เป็น regression fixtures เท่านั้น ไม่เพิ่มโหมด samples หรือเปลี่ยน shared
@@ -101,7 +105,9 @@ AniList ไม่เป็น dependency ของรุ่นนี้; กา�
 Playback payload เก็บ page URL และ episode IDs; ดึง iframe/session ใหม่ทุกครั้ง
 ตอนเริ่มต้นใช้ได้เมื่อ #mpPlayer data-post-id ตรง ID ที่เลือกเท่านั้น
 ตอนอื่นใช้ JavaScript ของหน้าจริงคลิกปุ่มเดิมใน native WebView สูงสุด8วินาที
-ตรวจ ID และ iframe เปลี่ยนจากตอนเริ่มต้นก่อนรับ Torbo embed แล้วจับ HLS request จริงอีกขั้นสูงสุด8วินาที
+ตรวจ ID และ iframe เปลี่ยนจากตอนเริ่มต้นก่อนส่งสัญญาณผลผ่าน request เพื่อไม่พึ่ง callback ตอน network idle
+Torbo ขอ config/token ใหม่ผ่าน API (timeout5วินาทีต่อ request) และตรวจ HLS manifest ก่อนส่งลิงก์
+ถ้าล้มเหลวจึงจับ HLS request จริงใน WebView อีกขั้นสูงสุด8วินาที; หยุดค้นรหัสตอนซ้ำหลังได้ลิงก์
 ส่ง signature/query/headers/Referer ให้ native player ไม่ส่ง HTML เป็น media ไม่เปิด UI เว็บและไม่แก้ challenge
 คำแนะนำอ่านเฉพาะการ์ดซีรีส์ในหน้า detail (รวม wrapper .list-ads ซึ่งมีการ์ด content จริง) สูงสุด12รายการ
 สถานะทดลอง: catalog สดยัง403ใน sandbox; snapshot tests และ Chromium Torbo ไม่ใช่ผลทดสอบ Android
