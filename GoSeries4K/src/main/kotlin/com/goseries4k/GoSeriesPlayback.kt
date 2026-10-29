@@ -19,6 +19,41 @@ internal data class SeriesPlayback(val page: String, val ids: List<String>) {
 }
 
 internal object TorboPlayer {
+    const val BASE = "https://torbo007.com"
+    private val mapper = ObjectMapper()
+
+    /** Build only the route returned by a fresh tokenplay response; never persist signed URLs. */
+    fun tokenMedia(body: String, player: String, parent: String, now: Long = System.currentTimeMillis() / 1000): String? = runCatching {
+        if (embed(player) == null || GoSeriesParser.local(parent) == null) return null
+        val json = mapper.readTree(body)
+        if (json.hasNonNull("error")) return null
+        val stream = json.path("stream_id").asText().takeIf { it.matches(Regex("[a-f0-9]+")) } ?: return null
+        val token = json.path("token").asText().takeIf { it.isNotBlank() } ?: return null
+        val session = json.path("session_id").asText().takeIf { it.isNotBlank() } ?: return null
+        val expires = json.path("expires").asText().toLongOrNull()?.takeIf { it > now } ?: return null
+        "$BASE/api/stream/$stream/index.m3u8".toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("token", token).addQueryParameter("expires", expires.toString())
+            .addQueryParameter("parent", parent.toHttpUrlOrNull()!!.host)
+            .addQueryParameter("sid", session).build().toString()
+    }.getOrNull()
+
+    /** Preserve captured player headers and merge browser cookies using BrowserSession's rule. */
+    fun playbackHeaders(captured: Map<String, String>, browser: Map<String, String>): Map<String, String> =
+        captured.toMutableMap().apply {
+            val cookies = (captured.entries + browser.entries)
+                .filter { it.key.equals("Cookie", ignoreCase = true) }
+                .flatMap { it.value.split(';') }.map { it.trim() }.filter { it.contains('=') }
+                .associateBy { it.substringBefore('=') }.values
+            if (cookies.isNotEmpty()) {
+                keys.removeAll { it.equals("Cookie", ignoreCase = true) }
+                put("Cookie", cookies.joinToString("; "))
+            }
+            if (keys.none { it.equals("User-Agent", ignoreCase = true) }) {
+                browser.entries.firstOrNull { it.key.equals("User-Agent", ignoreCase = true) }
+                    ?.let { put("User-Agent", it.value) }
+            }
+        }
+
     val capturePattern = Regex("^https://torbo007\\.com/api/stream/[a-f0-9]+/index\\.m3u8(?:\\?.*)?$")
     fun embed(value: String): String? = value.toHttpUrlOrNull()?.takeIf {
         it.scheme == "https" && it.host == "torbo007.com" && it.port == 443 && it.username.isEmpty() && it.password.isEmpty() &&
@@ -29,6 +64,15 @@ internal object TorboPlayer {
 }
 
 internal object EpisodeSelection {
+    // WebViewResolver evaluates scripts on network requests, not when a timer changes the DOM.
+    // Signal a completed selection explicitly so the final snapshot cannot be lost at network idle.
+    val resultPattern = Regex("""^https://goseries4k\.com/\?__cloudstream_episode=""")
+    fun result(id: String, url: String): String? {
+        if (!resultPattern.containsMatchIn(url)) return null
+        val snapshot = url.toHttpUrlOrNull()?.queryParameter("__cloudstream_episode") ?: return null
+        return selected(id, snapshot)
+    }
+
     private val mapper = ObjectMapper()
     /** A changed data-post-id alone is insufficient: the old episode's iframe may still exist. */
     fun selected(id: String, snapshot: String): String? = runCatching {
@@ -64,6 +108,13 @@ internal object EpisodeSelection {
                   state.currentId = root.getAttribute('data-post-id') || '';
                   frame = root.querySelector('iframe[src]');
                   state.player = frame ? frame.src : '';
+                  if (!state.sent && state.currentId === id && state.player &&
+                      (state.initialId === id || state.player !== state.initialPlayer) &&
+                      /^https:\/\/torbo007\.com\/embed\/[a-f0-9]+${'$'}/.test(state.player)) {
+                    state.sent = true;
+                    clearInterval(state.timer);
+                    fetch('/?__cloudstream_episode=' + encodeURIComponent(JSON.stringify(state))).catch(function() {});
+                  }
                 };
                 state.tick = tick;
                 tick();

@@ -1,9 +1,22 @@
+## รอบแก้ GoSeries4K / repository (2026-10-29)
+
+- GoSeries4K v2: ขอ session/HLS ใหม่ผ่าน Torbo API และตรวจ manifest ก่อนส่งให้เครื่องเล่น
+  ถ้า API ใช้ไม่ได้จึงลอง WebView เดิม; หยุดค้นรหัสตอนซ้ำเมื่อได้ลิงก์แล้ว
+- แก้การส่งผลเลือกตอนจาก WebView: ส่งสัญญาณเมื่อรหัสตอนและ iframe เปลี่ยนครบ
+  โดยยังปฏิเสธ iframe ตอนเก่า ไม่เก็บ token/URL วิดีโอไว้ในข้อมูลตอน
+- repo.json, ค่า build เริ่มต้นและคำสั่งติดตั้งชี้ `k2923/037bbbbb`
+  เพิ่มรุ่นแพ็กเกจที่เปิดใช้งานเพื่อให้รับ metadata ใหม่หลังเผยแพร่ builds
+- ทางสำรองคือ WebView ของตัวเล่นเดิมและรหัสสำรองของตอน/ภาษาเดียวกันที่เว็บประกาศ
+  ไม่พบโดเมน mirror อื่นที่ยืนยันได้ และไม่มีการจับคู่เรื่องจากเว็บอื่นด้วยชื่ออย่างเดียว
+- Torbo API/HLS และวิดีโอใน Chromium ตรวจได้; GoSeries สดยังติด Cloudflare ใน sandbox
+  จึงยังต้องทดสอบเลือกตอนและเล่นจริงใน Cloudstream บน Android
+
 ## GoSeries4K (เพิ่มใหม่ — ทดลอง)
 
 - เพิ่มแพ็กเกจ `GoSeries4K` แยก: หน้าแรก 4 หมวด ค้นหา แบ่งหน้า รายละเอียด ตอน และซีรีส์แนะนำจากเว็บเดียวกัน
 - ใช้ MHTML ที่อัปโหลดใน `samples/goseries4k.com/` ตรวจตัวอ่าน แต่ข้อมูลใช้งานจริงโหลดจากเว็บสด
   ตัวอย่าง Tigers Sniff the Rose มีปุ่มตอน 1–14 จึงไม่สร้างตอน 15–40 จากชื่อเรื่อง
-- โหลด iframe/session/HLS ใหม่ตอนกดเล่น รองรับ Torbo ที่พบในตัวอย่าง ผ่าน native WebView เบื้องหลังสูงสุด 8 วินาทีต่อขั้น
+- โหลด iframe/session/HLS ใหม่ตอนกดเล่น รองรับ Torbo ผ่าน API และ native WebView สำรองเบื้องหลังสูงสุด 8 วินาทีต่อขั้น
   ไม่เปิดหน้าต่างเว็บหรือเบราว์เซอร์สำรอง; หากเว็บเปลี่ยนโฮสต์จะต้องเพิ่มตัวอ่านตามข้อมูลจริง
 - การเลือกตอนตรวจทั้งรหัสตอนและ iframe ที่เปลี่ยนแล้ว เพื่อไม่ส่งตอนแรกแทนตอนที่ผู้ใช้เลือก
 - สถานะทดลอง: GoSeries ตอบ HTTP403 จาก sandbox; ตรวจตัวอ่านด้วย snapshots และ Torbo เล่นใน Chromium ได้
@@ -38,7 +51,8 @@
   ความช้าของเซิร์ฟเวอร์หมวดยังไม่ได้แก้; ไม่มีผลยืนยันการเล่นบน Android ในรอบนี้
 
 - รอบแก้ repository/samples: 037-HDD v15, 25-HD v10, Moviedofree v11, Movie2FreeHD v10,
-  AHDZero v10, 24HD v10, ThaiAnime v15; แก้ URL ติดตั้งและ manifest ให้ชี้ poppo112/037bbbb
+  AHDZero v10, 24HD v10, ThaiAnime v15; รอบนั้นแก้ URL ติดตั้งและ manifest ให้ชี้ poppo112/037bbbb
+  ปลายทางปัจจุบันเปลี่ยนเป็น k2923/037bbbbb ตามหัวข้อรอบแก้ด้านบน
 - เพิ่มตัวเลือก **(สำรองจาก samples)** อีก 5 แหล่งสำหรับ 24HD/AHDZero/Neko-Miku/AnimeRuka/Suba-Anime
   รวม 17 ตัวเลือกในแอปจาก 12 เว็บไซต์เดิม ดูวิธีใช้และข้อจำกัดท้ายเอกสาร
 
@@ -112,7 +126,7 @@
 
 ## ปลั๊กอินสำหรับ Cloudstream
 
-เพิ่ม repository ด้วย `https://raw.githubusercontent.com/poppo112/037bbbb/master/repo.json`
+เพิ่ม repository ด้วย `https://raw.githubusercontent.com/k2923/037bbbbb/master/repo.json`
 หากเคยเพิ่ม repository ของ `jasdwa22/037bb` ให้เพิ่ม URL ด้านบนเพื่อรับเวอร์ชันของ fork นี้
 แล้วติดตั้งหรืออัปเดตปลั๊กอินจาก repository นี้ในรายการส่วนขยาย:
 
@@ -200,7 +214,7 @@ FastCDN ตัวอย่างมี PNG prefix 545 ไบต์ก่อน M
 ทดสอบทุก provider และสร้างแพ็กเกจ:
 
 ```bash
-GITHUB_REPOSITORY=poppo112/037bbbb ./gradlew make makePluginsJson testDebugUnitTest
+GITHUB_REPOSITORY=k2923/037bbbbb ./gradlew make makePluginsJson testDebugUnitTest
 ```
 
 ใช้ JDK 17, Android SDK 35 และกำหนด `ANDROID_HOME` ให้ถูกต้อง
@@ -283,7 +297,7 @@ This template as well as the gradle plugin and the whole plugin system is **heav
 สร้างใหม่หลังแก้ samples: `python3 scripts/generate_sample_catalog.py`
 ตรวจว่าไฟล์ที่รวมไว้ตรงกับ samples: `python3 scripts/generate_sample_catalog.py --check`
 
-repo.json และ URL ติดตั้งชี้ที่ `poppo112/037bbbb` แล้ว; workflow ต้องทำงานบน master/main
+repo.json และ URL ติดตั้งชี้ที่ `k2923/037bbbbb` แล้ว; workflow ต้องทำงานบน master/main
 หรือกด Run workflow หลังรวมการเปลี่ยนแปลง เพื่อเผยแพร่ไฟล์ใหม่บน builds
 workflow รันทดสอบก่อนเผยแพร่ และเพิ่ม commit ใหม่บน builds โดยไม่เขียนประวัติทับ
 

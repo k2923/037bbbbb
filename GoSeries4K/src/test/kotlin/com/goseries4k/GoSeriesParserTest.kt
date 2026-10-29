@@ -110,4 +110,45 @@ class GoSeriesParserTest {
         assertNull(TorboPlayer.embed("https://torbo007.com.evil.invalid/embed/abc123"))
         assertThrows(IllegalArgumentException::class.java) { EpisodeSelection.script("1';alert(1)") }
     }
+    @Test fun `completed selection signal retains exact episode guard`() {
+        val next = "https://torbo007.com/embed/abc123"
+        fun signal(state: String) = "https://goseries4k.com/?__cloudstream_episode=" + java.net.URLEncoder.encode(state, "UTF-8")
+        assertEquals(next, EpisodeSelection.result("134525", signal(snapshot("134525", next))))
+        assertNull(EpisodeSelection.result("134525", signal(snapshot("134525", embed))))
+        assertNull(EpisodeSelection.result("134525", signal(snapshot("134522", next))))
+        assertNull(EpisodeSelection.result("134525", signal(snapshot("134525", next)).replace("goseries4k.com", "ads.invalid")))
+        assertNull(EpisodeSelection.result("134525", "https://goseries4k.com/?__cloudstream_episode=invalid"))
+    }
+
+    @Test fun `fresh token route encodes query and rejects missing expired and invalid responses`() {
+        val parent = "https://goseries4k.com/tigers-sniff-the-rose/"
+        val json = """{"stream_id":"abc123","token":"a&b=+","expires":200,"session_id":"s&1"}"""
+        val url = TorboPlayer.tokenMedia(json, embed, parent, 100)!!
+        assertTrue(TorboPlayer.media(url, embed))
+        assertTrue(url.contains("token=a%26b%3D%2B"))
+        assertTrue(url.contains("parent=goseries4k.com"))
+        assertTrue(url.contains("sid=s%261"))
+        assertNull(TorboPlayer.tokenMedia(json, embed, parent, 200))
+        assertNull(TorboPlayer.tokenMedia(json.replace("abc123", "../foreign"), embed, parent, 100))
+        assertNull(TorboPlayer.tokenMedia(json.replace("a&b=+", ""), embed, parent, 100))
+        assertNull(TorboPlayer.tokenMedia(json.replace("s&1", ""), embed, parent, 100))
+        assertNull(TorboPlayer.tokenMedia("{}", embed, parent, 100))
+        assertNull(TorboPlayer.tokenMedia("<html>error</html>", embed, parent, 100))
+        assertNull(TorboPlayer.tokenMedia(json, embed, "https://ads.invalid", 100))
+    }
+
+    @Test fun `fallback headers preserve captured session and explicit player agent`() {
+        val captured = mapOf("cookie" to "token=a=b; session=old", "User-Agent" to "player-agent", "Referer" to embed)
+        val browser = mapOf("Cookie" to "session=new; clearance=fresh", "User-Agent" to "browser-agent")
+        val headers = TorboPlayer.playbackHeaders(captured, browser)
+        assertEquals("token=a=b; session=new; clearance=fresh", headers["Cookie"])
+        assertEquals(1, headers.keys.count { it.equals("Cookie", ignoreCase = true) })
+        assertEquals("player-agent", headers["User-Agent"])
+        assertEquals(embed, headers["Referer"])
+        assertEquals(captured, TorboPlayer.playbackHeaders(captured, emptyMap()).mapKeys {
+            if (it.key == "Cookie") "cookie" else it.key
+        })
+        assertEquals(browser, TorboPlayer.playbackHeaders(emptyMap(), browser))
+    }
+
 }
