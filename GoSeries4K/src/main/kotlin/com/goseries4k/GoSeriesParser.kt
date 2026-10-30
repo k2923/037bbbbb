@@ -55,6 +55,8 @@ internal object GoSeriesParser {
     fun initialPlayer(doc: Document, id: String): String? {
         val player = doc.selectFirst("#mpPlayer[data-post-id]") ?: return null
         if (player.attr("data-post-id") != id) return null
+        val active = doc.select("button.mp-ep-btn.active[data-id]")
+        if (active.isNotEmpty() && (active.size != 1 || active.first()!!.attr("data-id") != id)) return null
         return player.select("iframe[src]").firstNotNullOfOrNull { TorboPlayer.embed(it.absUrl("src")) }
     }
 }

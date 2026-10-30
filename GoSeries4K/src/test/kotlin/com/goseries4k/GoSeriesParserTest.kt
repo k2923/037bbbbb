@@ -51,6 +51,20 @@ class GoSeriesParserTest {
         doc.selectFirst("#mpPlayer iframe")!!.attr("src", "https://ads.invalid/embed/ad")
         assertNull(GoSeriesParser.initialPlayer(doc, "134522"))
     }
+    @Test fun `uploaded selected episode keeps original post id but changes active button`() {
+        val dir = File("../samples/goseries4k.com")
+        val pages = dir.listFiles()!!.filter { it.name.endsWith(".html") && it.name.contains("Tigers Sniff") }
+            .map { Jsoup.parse(it, "UTF-8", "https://goseries4k.com/tigers-sniff-the-rose/") }
+        val first = pages.single { it.selectFirst("button.mp-ep-btn.active")?.attr("data-id") == "134522" }
+        val second = pages.single { it.selectFirst("button.mp-ep-btn.active")?.attr("data-id") == "134525" }
+        for (page in listOf(first, second)) {
+            assertEquals("134522", page.selectFirst("#mpPlayer")!!.attr("data-post-id"))
+            page.selectFirst("#mpPlayer iframe")!!.attr("src", embed)
+        }
+        assertEquals(embed, GoSeriesParser.initialPlayer(first, "134522"))
+        assertNull(GoSeriesParser.initialPlayer(second, "134522"))
+        assertNull(GoSeriesParser.initialPlayer(second, "134525"))
+    }
     @Test fun `pagination preserves search and replaces an existing page suffix`() {
         val doc = fixture("category")
         assertTrue(GoSeriesParser.hasNext(doc))

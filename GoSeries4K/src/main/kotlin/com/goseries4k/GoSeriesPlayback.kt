@@ -74,7 +74,7 @@ internal object EpisodeSelection {
     }
 
     private val mapper = ObjectMapper()
-    /** A changed data-post-id alone is insufficient: the old episode's iframe may still exist. */
+    /** The active button identifies the episode; a changed iframe confirms the switch completed. */
     fun selected(id: String, snapshot: String): String? = runCatching {
         val decoded = mapper.readTree(snapshot)
         val state = if (decoded.isTextual) mapper.readTree(decoded.asText()) else decoded
@@ -97,15 +97,19 @@ internal object EpisodeSelection {
                   var button = document.querySelector('button.mp-ep-btn[data-id="' + id + '"]');
                   if (!root || !button || document.readyState !== 'complete') return;
                   var frame = root.querySelector('iframe[src]');
+                  var active = document.querySelectorAll('button.mp-ep-btn.active[data-id]');
+                  var activeId = active.length === 1 ? active[0].getAttribute('data-id') : '';
                   if (state.initialId === null) {
-                    state.initialId = root.getAttribute('data-post-id') || '';
+                    // A selected button can precede the corresponding iframe update.
+                    state.initialId = activeId === root.getAttribute('data-post-id') ? activeId : '';
                     state.initialPlayer = frame ? frame.src : '';
                   }
                   if (!state.clicked && state.initialId !== id) {
                     state.clicked = true;
                     button.click();
                   }
-                  state.currentId = root.getAttribute('data-post-id') || '';
+                  active = document.querySelectorAll('button.mp-ep-btn.active[data-id]');
+                  state.currentId = active.length === 1 ? active[0].getAttribute('data-id') : '';
                   frame = root.querySelector('iframe[src]');
                   state.player = frame ? frame.src : '';
                   if (!state.sent && state.currentId === id && state.player &&
