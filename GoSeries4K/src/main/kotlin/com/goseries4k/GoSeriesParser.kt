@@ -1,7 +1,9 @@
 package com.goseries4k
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.providers.network.CatalogPagination
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -13,6 +15,8 @@ internal object GoSeriesParser {
     const val BASE = "https://goseries4k.com"
     private val episodeNumber = Regex("(?i)\\bEP\\s*\\.?\\s*(\\d+)\\b")
     private val year = Regex("\\b(20\\d{2}|19\\d{2})\\b")
+    private val episodeCache = Regex("\\bwindow\\.miru_ep_cache\\s*=\\s*")
+    private val mapper = ObjectMapper()
     fun local(value: String, base: String = BASE): String? = base.toHttpUrlOrNull()?.resolve(value)?.takeIf {
         value.isNotBlank() && it.host == "goseries4k.com" && it.username.isEmpty() && it.password.isEmpty()
     }?.newBuilder()?.fragment(null)?.build()?.toString()
@@ -49,6 +53,22 @@ internal object GoSeriesParser {
         return SeriesDetail(title, doc.selectFirst("#main .-boximg")?.let { poster(it, doc.baseUri()) },
             doc.select("#main .-boxdetail p").joinToString("\n") { it.text() }.takeIf { it.isNotBlank() },
             year.find(title)?.value?.toIntOrNull(), episodes)
+    }
+
+    /** Read the selected episode's fresh, page-provided player without running site scripts. */
+    fun cachedPlayer(doc: Document, id: String): String? {
+        if (!id.matches(Regex("[0-9]+")) || doc.select("#main .mp-ep-group button.mp-ep-btn[data-id]")
+                .none { it.attr("data-id") == id }) return null
+        val players = doc.select("script").flatMap { script ->
+            val source = script.data()
+            val match = episodeCache.find(source) ?: return@flatMap emptyList()
+            val entry = runCatching { mapper.readTree(source.substring(match.range.last + 1)).path(id) }.getOrNull()
+            if (entry == null || !entry.isTextual) return@flatMap emptyList()
+            Jsoup.parseBodyFragment(entry.asText(), doc.baseUri())
+                .select("iframe.foxy-masked-iframe[data-src]")
+                .mapNotNull { TorboPlayer.embed(it.absUrl("data-src")) }
+        }.distinct()
+        return players.singleOrNull()
     }
 
     /** Only use the fresh default iframe when the page identifies it as the requested episode. */

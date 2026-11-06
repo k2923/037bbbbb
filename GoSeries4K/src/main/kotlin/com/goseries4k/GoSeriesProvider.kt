@@ -80,6 +80,7 @@ class GoSeriesProvider : MainAPI() {
             val doc = document(page, fresh = true)
             val available = GoSeriesParser.detail(doc).episodes.any { id in it.ids }
             if (!available) return null
+            GoSeriesParser.cachedPlayer(doc, id)?.let { return it }
             GoSeriesParser.initialPlayer(doc, id)?.let { return it }
         } catch (error: Exception) {
             if (error is CancellationException) throw error

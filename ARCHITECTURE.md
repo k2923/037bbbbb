@@ -103,8 +103,15 @@ AniList ไม่เป็น dependency ของรุ่นนี้; กา�
 อ่านการ์ดจาก #main .list-movie/.s-grid และตอนจากปุ่ม mp-ep-btn จริง แยก audio group
 รวมรหัสตัวเล่นสำรองของตอนเดียวกัน ชื่อเรื่องที่ระบุ EP.1–40 ไม่ใช่รายการตอนที่พร้อมเล่น
 Playback payload เก็บ page URL และ episode IDs; ดึง iframe/session ใหม่ทุกครั้ง
-ตอนเริ่มต้นใช้ได้เมื่อ #mpPlayer data-post-id ตรง ID ที่เลือกเท่านั้น
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e11116b7f2f217f8eac97e5b83c83d9c685487fa9c21dbe6aa58dfacb74b49db -->
+
+อ่าน `window.miru_ep_cache` จากหน้าใหม่ตาม ID ของปุ่มตอน แล้วตรวจ `data-src` ของ iframe กับ Torbo ก่อนใช้งาน
+หากไม่มีข้อมูล cache ตอนเริ่มต้นใช้ได้เมื่อ #mpPlayer data-post-id ตรง ID ที่เลือกเท่านั้น
 ตอนอื่นใช้ JavaScript ของหน้าจริงคลิกปุ่มเดิมใน native WebView สูงสุด8วินาที
+
+<!-- /coderabbit-ai-generated:v1 -->
 ตรวจ ID และ iframe เปลี่ยนจากตอนเริ่มต้นก่อนส่งสัญญาณผลผ่าน request เพื่อไม่พึ่ง callback ตอน network idle
 Torbo ขอ config/token ใหม่ผ่าน API (timeout5วินาทีต่อ request) และตรวจ HLS manifest ก่อนส่งลิงก์
 ถ้าล้มเหลวจึงจับ HLS request จริงใน WebView อีกขั้นสูงสุด8วินาที; หยุดค้นรหัสตอนซ้ำหลังได้ลิงก์
