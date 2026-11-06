@@ -2,6 +2,7 @@ package com.goseries4k
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.jsoup.Jsoup
+import org.jsoup.nodes.DataNode
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
@@ -50,6 +51,31 @@ class GoSeriesParserTest {
         val doc = fixture("series")
         doc.selectFirst("#mpPlayer iframe")!!.attr("src", "https://ads.invalid/embed/ad")
         assertNull(GoSeriesParser.initialPlayer(doc, "134522"))
+    }
+    @Test fun `page episode cache maps the exact real episode to its lazy player`() {
+        val page = File("../samples/goseries4k.com").listFiles()!!
+            .first { it.name.endsWith(".html") && it.name.contains("Tigers Sniff") }
+        val doc = Jsoup.parse(page, "UTF-8", "https://goseries4k.com/tigers-sniff-the-rose/")
+        assertEquals(embed, GoSeriesParser.cachedPlayer(doc, "134522"))
+        assertEquals("https://torbo007.com/embed/131d5863df2841cc9bcd9f7208621eca", GoSeriesParser.cachedPlayer(doc, "134525"))
+        assertNull(GoSeriesParser.cachedPlayer(doc, "999999"))
+    }
+    @Test fun `episode cache rejects foreign or ambiguous players and malformed data`() {
+        fun document(fragment: String): org.jsoup.nodes.Document {
+            val doc = fixture("series")
+            val json = ObjectMapper().writeValueAsString(mapOf("134522" to fragment, "999" to fragment))
+            doc.body().appendElement("script").appendChild(DataNode("window.miru_ep_cache = $json;"))
+            return doc
+        }
+        val valid = """<iframe class="foxy-masked-iframe" src="about:blank" data-src="$embed"></iframe>"""
+        assertEquals(embed, GoSeriesParser.cachedPlayer(document(valid), "134522"))
+        assertNull(GoSeriesParser.cachedPlayer(document(valid), "999")) // Cache entry without an episode button.
+        assertNull(GoSeriesParser.cachedPlayer(document(valid.replace("torbo007.com", "ads.invalid")), "134522"))
+        assertNull(GoSeriesParser.cachedPlayer(document(valid.replace("foxy-masked-iframe", "advert")), "134522"))
+        assertNull(GoSeriesParser.cachedPlayer(document(valid + valid.replace(embed, "https://torbo007.com/embed/abc123")), "134522"))
+        val bad = fixture("series")
+        bad.body().appendElement("script").appendChild(DataNode("window.miru_ep_cache = {broken;"))
+        assertNull(GoSeriesParser.cachedPlayer(bad, "134522"))
     }
     @Test fun `uploaded selected episode keeps original post id but changes active button`() {
         val dir = File("../samples/goseries4k.com")
