@@ -101,7 +101,15 @@ AniList ไม่เป็น dependency ของรุ่นนี้; กา�
 
 โมดูลแยกใช้ MHTML ของผู้ใช้เป็น regression fixtures เท่านั้น ไม่เพิ่มโหมด samples หรือเปลี่ยน shared
 อ่านการ์ดจาก #main .list-movie/.s-grid และตอนจากปุ่ม mp-ep-btn จริง แยก audio group
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:eb2b9198e055f936e31d9f860eb3831d63534786f54bbf351319fb9b555e194c -->
+
 รวมรหัสตัวเล่นสำรองของตอนเดียวกัน ชื่อเรื่องที่ระบุ EP.1–40 ไม่ใช่รายการตอนที่พร้อมเล่น
+เมื่อมีทั้งซับไทยและพากย์ไทย ส่งตอนเป็นกลุ่ม DubStatus ใน AnimeLoadResponse โดยคง TvType.TvSeries เพื่อให้ Cloudstream แสดงตัวเลือกภาษา
+กลุ่มเสียงรูปแบบอื่นใช้รายการซีซันที่ตั้งชื่อตามกลุ่ม เพื่อเก็บตอนเลขซ้ำครบ; เรื่องที่มีสองภาษาอาจต้องเริ่มประวัติตอนใหม่
+
+<!-- /coderabbit-ai-generated:v1 -->
 Playback payload เก็บ page URL และ episode IDs; ดึง iframe/session ใหม่ทุกครั้ง
 <!-- coderabbit-ai-generated:v1 -->
 

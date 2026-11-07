@@ -1,4 +1,4 @@
-version = 4
+version = 5
 cloudstream {
     language = "th"
     description = "GoSeries4K ซีรีส์จากเว็บสด (ทดลอง: ต้องทดสอบการเลือกตอนบน Android)"

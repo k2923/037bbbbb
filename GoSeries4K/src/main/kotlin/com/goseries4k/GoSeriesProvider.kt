@@ -61,13 +61,34 @@ class GoSeriesProvider : MainAPI() {
         val doc = document(url)
         val detail = GoSeriesParser.detail(doc)
         if (detail.episodes.isEmpty()) throw ErrorLoadingException("เว็บยังไม่มีปุ่มตอนที่รองรับสำหรับเรื่องนี้")
-        val episodes = detail.episodes.map { ep ->
+        fun episode(ep: SeriesEpisode, seasonNumber: Int? = null) =
             newEpisode(SeriesPlayback(url, ep.ids).encode()) {
                 episode = ep.number
+                season = seasonNumber
                 name = listOf("EP ${ep.number}", ep.audio).filter { it.isNotBlank() }.joinToString(" · ")
             }
+        val groups = GoSeriesParser.audioGroups(detail.episodes)
+        val response: LoadResponse = if (GoSeriesParser.hasDubAndSub(groups)) {
+            // Cloudstream's TV response collapses episodes with the same number; its grouped response has a dub selector.
+            newAnimeLoadResponse(detail.title, url, TvType.TvSeries) {
+                groups.forEach { group ->
+                    val status = if (group.audio == SeriesAudio.DUBBED) DubStatus.Dubbed else DubStatus.Subbed
+                    addEpisodes(status, group.episodes.map { episode(it) })
+                }
+            }
+        } else {
+            // Other site labels still get separate, named lists so matching episode numbers cannot hide a group.
+            val multiple = groups.size > 1
+            val episodes = groups.flatMapIndexed { index, group ->
+                group.episodes.map { episode(it, if (multiple) index + 1 else null) }
+            }
+            newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, episodes) {
+                if (multiple) seasonNames = groups.mapIndexed { index, group ->
+                    SeasonData(index + 1, group.label.ifBlank { "ภาษา ${index + 1}" })
+                }
+            }
         }
-        return newTvSeriesLoadResponse(detail.title, url, TvType.TvSeries, episodes) {
+        return response.apply {
             posterUrl = detail.poster; posterHeaders = mapOf("Referer" to url)
             plot = detail.plot; year = detail.year
             recommendations = GoSeriesParser.cards(doc).filter { it.url != GoSeriesParser.local(url) }.take(12).map { it.response() }

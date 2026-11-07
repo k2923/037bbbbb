@@ -115,6 +115,38 @@ class GoSeriesParserTest {
         doc.selectFirst(".mp-ep-group")!!.after("<div class=mp-ep-group><div class=mp-epg-title>พากย์ไทย</div><button class=mp-ep-btn data-id=888>EP 1</button></div>")
         assertEquals(15, GoSeriesParser.detail(doc).episodes.size)
     }
+    @Test fun `subbed and dubbed episodes stay in separate selectable groups`() {
+        val doc = fixture("series")
+        doc.selectFirst(".mp-ep-group")!!.after("<div class=mp-ep-group><div class=mp-epg-title>พากย์ไทย</div><button class=mp-ep-btn data-id=888>EP 1</button><button class=mp-ep-btn data-id=889>EP 2</button></div>")
+        val groups = GoSeriesParser.audioGroups(GoSeriesParser.detail(doc).episodes)
+        assertTrue(GoSeriesParser.hasDubAndSub(groups))
+        val sub = groups.single { it.audio == SeriesAudio.SUBBED }
+        val dub = groups.single { it.audio == SeriesAudio.DUBBED }
+        assertEquals("134522", sub.episodes.single { it.number == 1 }.ids.single())
+        assertEquals("888", dub.episodes.single { it.number == 1 }.ids.single())
+        assertEquals("889", dub.episodes.single { it.number == 2 }.ids.single())
+        assertEquals(14, sub.episodes.size)
+    }
+    @Test fun `nested audio group does not leak dubbed ids into subtitle backups`() {
+        val doc = fixture("series")
+        doc.selectFirst(".mp-ep-group")!!.append("<div class=mp-ep-group><div class=mp-epg-title>พากย์ไทย</div><button class=mp-ep-btn data-id=888>EP 1</button><button class=mp-ep-btn data-id=889>EP 2</button></div>")
+        val groups = GoSeriesParser.audioGroups(GoSeriesParser.detail(doc).episodes)
+        assertTrue(GoSeriesParser.hasDubAndSub(groups))
+        assertEquals(listOf("134522"), groups.single { it.audio == SeriesAudio.SUBBED }.episodes.single { it.number == 1 }.ids)
+        assertEquals(listOf("888"), groups.single { it.audio == SeriesAudio.DUBBED }.episodes.single { it.number == 1 }.ids)
+    }
+    @Test fun `other labels are kept separately without guessing their audio`() {
+        val groups = GoSeriesParser.audioGroups(listOf(
+            SeriesEpisode(1, "ซับไทย", listOf("1")),
+            SeriesEpisode(1, "เสียงต้นฉบับ", listOf("2")),
+            SeriesEpisode(1, "ซับไทย และ พากย์ไทย", listOf("3")),
+            SeriesEpisode(1, "", listOf("4")),
+        ))
+        assertFalse(GoSeriesParser.hasDubAndSub(groups))
+        assertEquals(listOf(SeriesAudio.SUBBED, SeriesAudio.OTHER, SeriesAudio.OTHER, SeriesAudio.OTHER), groups.map { it.audio })
+        assertEquals(listOf("1", "2", "3", "4"), groups.flatMap { it.episodes }.flatMap { it.ids })
+        assertFalse(GoSeriesParser.hasDubAndSub(groups.take(1)))
+    }
     @Test fun `configured category routes exist in uploaded menu`() {
         val html = File("../samples/regression/goseries4k.com/home.html").readText()
         // Reduced fixture contains home section category headers; full upload contains the dub menu.
