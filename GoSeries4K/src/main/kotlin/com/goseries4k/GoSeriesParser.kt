@@ -10,6 +10,8 @@ import org.jsoup.nodes.Element
 internal data class SeriesCard(val title: String, val url: String, val poster: String?)
 internal data class SeriesEpisode(val number: Int, val audio: String, val ids: List<String>)
 internal data class SeriesDetail(val title: String, val poster: String?, val plot: String?, val year: Int?, val episodes: List<SeriesEpisode>)
+internal enum class SeriesAudio { SUBBED, DUBBED, OTHER }
+internal data class SeriesAudioGroup(val label: String, val audio: SeriesAudio, val episodes: List<SeriesEpisode>)
 
 internal object GoSeriesParser {
     const val BASE = "https://goseries4k.com"
@@ -37,12 +39,28 @@ internal object GoSeriesParser {
     fun pageUrl(base: String, page: Int) = CatalogPagination.path(base, page)
     fun hasNext(doc: Document) = CatalogPagination.hasNext(doc, "a.next.page-numbers[href]")
 
+    fun audioGroups(episodes: List<SeriesEpisode>): List<SeriesAudioGroup> =
+        episodes.groupBy { it.audio }.map { (label, items) ->
+            val subbed = label.contains("ซับไทย")
+            val dubbed = label.contains("พากย์ไทย")
+            val audio = when {
+                subbed && !dubbed -> SeriesAudio.SUBBED
+                dubbed && !subbed -> SeriesAudio.DUBBED
+                else -> SeriesAudio.OTHER
+            }
+            SeriesAudioGroup(label, audio, items)
+        }
+
+    fun hasDubAndSub(groups: List<SeriesAudioGroup>): Boolean =
+        groups.size == 2 && groups.map { it.audio }.toSet() == setOf(SeriesAudio.SUBBED, SeriesAudio.DUBBED)
+
     fun detail(doc: Document): SeriesDetail {
         val title = doc.selectFirst("#main .-titlehead h2.entry-title")?.text()?.trim()
             ?.takeIf { it.isNotBlank() } ?: error("ไม่พบชื่อซีรีส์ในหน้ารายละเอียด")
         val episodes = doc.select("#main .mp-ep-group").flatMap { group ->
-            val audio = group.selectFirst(".mp-epg-title")?.text().orEmpty().trim()
-            group.select("button.mp-ep-btn[data-id]").mapNotNull { button ->
+            val audio = group.select(".mp-epg-title").firstOrNull { it.closest(".mp-ep-group") === group }
+                ?.text().orEmpty().trim()
+            group.select("button.mp-ep-btn[data-id]").filter { it.closest(".mp-ep-group") === group }.mapNotNull { button ->
                 val id = button.attr("data-id").takeIf { it.matches(Regex("[0-9]+")) } ?: return@mapNotNull null
                 val number = episodeNumber.find(button.text())?.groupValues?.get(1)?.toIntOrNull() ?: return@mapNotNull null
                 SeriesEpisode(number, audio, listOf(id))
